@@ -44,7 +44,7 @@ struct VS_OUTPUT {
 VS_OUTPUT main(VS_INPUT IN) {
     VS_OUTPUT OUT;
 
-    const float4 const_0 = {0.299, 0.587000012, 0.114, 0};
+    const float4 const_0 = {0.2126, 0.7152, 0.0722, 0}; // BT.709 luma vector
 
     float1 q0;
     float3 q1;

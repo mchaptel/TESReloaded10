@@ -18,7 +18,7 @@ float3 screen(float3 a, float3 b, float w) {
 }
 
 float get_average(float3 col) {
-	return dot(col, 0.333);
+	return dot(col, 0.33333333);
 }
 
 float get_luminosity(float3 col) {
@@ -26,7 +26,7 @@ float get_luminosity(float3 col) {
 }
 
 float get_luma(float3 col) {
-	return max(dot(col, float3(0.299, 0.587, 0.114)), 0.001);
+	return max(dot(col, float3(0.2126, 0.7152, 0.0722)), 0.001);
 }
 
 float get_luma_linear(float3 col) {

@@ -214,7 +214,7 @@ float4 alphaBlend(float4 base, float4 blend)
 
 float4 Desaturate(float4 input)
 {
-	float greyscale = input.r * 0.3f + input.g * 0.59f +input.b * 0.11f;
+	float greyscale = input.r * 0.2126f + input.g * 0.7152f +input.b * 0.0722f;
 	return float4(greyscale, greyscale, greyscale, input.a);
 }
 

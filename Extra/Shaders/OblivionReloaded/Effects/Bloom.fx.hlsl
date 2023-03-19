@@ -70,7 +70,7 @@ static const float2 BlurOffsets[cKernelSize] =
 
 float3 AdjustSaturation(float3 color, float saturation)
 {
-	float grey = dot(color, float3(0.3, 0.59, 0.11));
+	float grey = dot(color, float3(0.2126, 0.7152, 0.0722));
 	
 	return lerp(grey, color, saturation);
 }
