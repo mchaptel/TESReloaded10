@@ -206,7 +206,7 @@ float4 Combine(VSOUT IN) : COLOR0
 {
 	float3 color = tex2D(TESR_SourceBuffer, IN.UVCoord).rgb;
 	float ao = tex2D(TESR_RenderedBuffer, IN.UVCoord).r;
-	float luminance = color.r * 0.3 + color.g * 0.59 + color.b * 0.11;
+	float luminance = color.r * 0.2126 + color.g * 0.7152 + color.b * 0.0722;
 	float white = 1.0;
 	float black = 0.0;
 	float lt = luminance - TESR_AmbientOcclusionData.y;

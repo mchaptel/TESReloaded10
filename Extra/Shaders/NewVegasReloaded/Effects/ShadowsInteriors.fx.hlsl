@@ -154,7 +154,7 @@ float4 Shadow( VSOUT IN ) : COLOR0 {
 
 float Luma(float3 input)
 {
-	return input.r * 0.3f + input.g * 0.59f +input.b * 0.11f;
+	return input.r * 0.2126f + input.g * 0.7152f +input.b * 0.0722f;
 }
 
 float4 CombineShadow( VSOUT IN ) : COLOR0 {
