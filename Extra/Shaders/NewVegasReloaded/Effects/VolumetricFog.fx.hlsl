@@ -62,8 +62,8 @@ float ExponentialFog(float posHeight, float distance) {
 float4 VolumetricFog(VSOUT IN) : COLOR0 
 {
 	float3 color = tex2D(TESR_RenderedBuffer, IN.UVCoord).rgb;
-    float height = reconstructWorldPosition(IN.UVCoord).z;
-    float depth = readDepth(IN.UVCoord);
+	float height = reconstructWorldPosition(IN.UVCoord).z;
+	float depth = readDepth(IN.UVCoord);
 	float3 eyeVector = normalize(toWorld(IN.UVCoord));
 	float fogDepth = length(eyeVector * depth);
 
@@ -77,12 +77,19 @@ float4 VolumetricFog(VSOUT IN) : COLOR0
 	float sunAmount = pows(dot(eyeVector, TESR_SunDirection.xyz), SunExponent) * (SunGlare * SunGlareCoeff); //sun influence
 	fogColor = fogColor + TESR_SunColor.rgb * sunAmount; // add sun color to the fog
 
+	float3 originalFog = fogColor;
+	float originalFogLuma = luma(originalFog);
 	fogColor = lerp(color.rgb, fogColor.rgb, fogAmount); // calculate final color of scene through the fog
 
-	// bring back some of the original color based on luma (brightest lights will come through)
-    float fogLuma = luma(fogColor);
-    float lumaDiff = saturate(invlerp(fogLuma, max(fogLuma, 1.0f), luma(color)));
-	color = lerp(fogColor, color, lumaDiff); 
+	// Blend back in some of the original color based on luma (brightest lights will come through):
+	float fogLuma = luma(fogColor);
+	float lumaDiff = invlerps(saturate(fogLuma), 1.0f, luma(color));
+	color = lerp(fogColor, color, lumaDiff);
+
+	// Bring back any fog above 1 as additive (there usually isn't any, but it's good for HDR rendering):
+	float fogAdditiveLumaRatio = saturate(1.0f / originalFogLuma); // From (background) color luma to fog luma
+	float3 additiveFogColor = originalFog * (1.0f - fogAdditiveLumaRatio) * fogAmount;
+	color += additiveFogColor;
 
 
 	// if (IN.UVCoord.x > 0.8 && IN.UVCoord.x < 0.9){
@@ -92,7 +99,7 @@ float4 VolumetricFog(VSOUT IN) : COLOR0
 	// 	if (IN.UVCoord.y > 0.6 && IN.UVCoord.y < 0.7) return TESR_SunAmbient;
 	// }
 
-	return float4(saturate(color), 1.0f);
+	return float4(color, 1.0f);
 }
 
 technique
