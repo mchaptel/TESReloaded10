@@ -97,7 +97,7 @@ float4 LumaSharpenPass(VSOUT IN) : COLOR0 {
 		return float4(saturate(0.5 + (sharp_luma * 4)).rrr, 1);
 	#endif
 	
-	return float4(saturate(ori.rgb), 1);
+	return float4(ori.rgb, 1);
 }
 	
 technique
