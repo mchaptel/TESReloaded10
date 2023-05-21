@@ -106,7 +106,7 @@ float4 VolumetricFog(VSOUT IN) : COLOR0
 	// 	if (IN.UVCoord.y > 0.6 && IN.UVCoord.y < 0.7) return TESR_SunAmbient;
 	// }
 
-	return float4(saturate(color), 1.0f);
+	return float4(color, 1.0f);
 }
 
 technique
