@@ -16,26 +16,26 @@ public:
 	float	z;
 	float	w;
 };
-assert(sizeof(hkVector4) == 0x010);
+static_assert(sizeof(hkVector4) == 0x010);
 
 class hkQuaternion {
 public:
 	hkVector4	vec;
 };
-assert(sizeof(hkQuaternion) == 0x010);
+static_assert(sizeof(hkQuaternion) == 0x010);
 
 class hkBaseObject {
 public:
 	virtual void Destructor(bool FreeThis);
 };
-assert(sizeof(hkBaseObject) == 0x004);
+static_assert(sizeof(hkBaseObject) == 0x004);
 
 class hkRefObject : public hkBaseObject {
 public:
 	UInt16		sizeAndFlags;	// 04
 	UInt16		refCount;		// 06
 };
-assert(sizeof(hkRefObject) == 0x008);
+static_assert(sizeof(hkRefObject) == 0x008);
 
 class bhkRefObject : public NiObject {
 public:
@@ -44,7 +44,7 @@ public:
 
 	hkRefObject*	hkObject;	// 008
 };
-assert(sizeof(bhkRefObject) == 0x00C);
+static_assert(sizeof(bhkRefObject) == 0x00C);
 
 class bhkSerializable : public bhkRefObject {
 public:
@@ -62,7 +62,7 @@ public:
 
 	void*			hkData;		// 00C
 };
-assert(sizeof(bhkSerializable) == 0x010);
+static_assert(sizeof(bhkSerializable) == 0x010);
 
 class bhkWorldObject : public bhkSerializable {
 public:
@@ -70,7 +70,7 @@ public:
 	virtual void	Unk_21();
 	virtual NiNode*	CreateNiGeometry(NiNode* Node);
 };
-assert(sizeof(bhkWorldObject) == 0x010);
+static_assert(sizeof(bhkWorldObject) == 0x010);
 
 class bhkRigidBody : public bhkWorldObject {
 public:
@@ -78,7 +78,7 @@ public:
 	UInt32			unk014;		// 014
 	UInt32			unk018;		// 018
 };
-assert(sizeof(bhkRigidBody) == 0x1C);
+static_assert(sizeof(bhkRigidBody) == 0x1C);
 
 class bhkRigidBodyT : public bhkRigidBody {
 public:
@@ -90,7 +90,7 @@ public:
 	UInt32			unk048;		// 048
 	UInt32			unk04C;		// 04C
 };
-assert(sizeof(bhkRigidBodyT) == 0x50);
+static_assert(sizeof(bhkRigidBodyT) == 0x50);
 
 class bhkShape : public bhkSerializable {
 public:
@@ -139,16 +139,16 @@ public:
 
 	UInt32			material;	// 010
 };
-assert(sizeof(bhkShape) == 0x14);
+static_assert(sizeof(bhkShape) == 0x14);
 
 class bhkPackedNiTriStripsShape : public bhkShape {};
-assert(sizeof(bhkPackedNiTriStripsShape) == 0x14);
+static_assert(sizeof(bhkPackedNiTriStripsShape) == 0x14);
 
 class NiCollisionObject : public NiObject {
 public:
 	NiAVObject*		SceneObject;	// 008
 };
-assert(sizeof(NiCollisionObject) == 0x0C);
+static_assert(sizeof(NiCollisionObject) == 0x0C);
 
 class bhkCollisionObject : public NiCollisionObject {
 public:
@@ -163,13 +163,13 @@ public:
 	UInt8				pad00E[2];		// 00E
 	bhkRigidBody*		bRigidBody;		// 010
 };
-assert(sizeof(bhkCollisionObject) == 0x14);
+static_assert(sizeof(bhkCollisionObject) == 0x14);
 
 class bhkCollisionObjectEx : public bhkCollisionObject {
 public:
 	NiNode*			GeoNode;	// 014
 };
-assert(sizeof(bhkCollisionObjectEx) == 0x18);
+static_assert(sizeof(bhkCollisionObjectEx) == 0x18);
 
 class hkWorldRayCastInput {
 public:
@@ -180,7 +180,7 @@ public:
 	UInt32		FilterInfo;						// 24
 	UInt32		pad28[2];
 };
-assert(sizeof(hkWorldRayCastInput) == 0x30);
+static_assert(sizeof(hkWorldRayCastInput) == 0x30);
 
 class hkShapeRayCastOutput {
 public:
@@ -189,14 +189,14 @@ public:
 	float		HitFraction;			// 14
 	UInt32		pad18[2];
 };
-assert(sizeof(hkShapeRayCastOutput) == 0x20);
+static_assert(sizeof(hkShapeRayCastOutput) == 0x20);
 
 class hkWorldRayCastOutput : public hkShapeRayCastOutput {
 public:
 	hkCollidable*	RootCollidable;		// 20
 	UInt32			pad24[3];
 };
-assert(sizeof(hkWorldRayCastOutput) == 0x30);
+static_assert(sizeof(hkWorldRayCastOutput) == 0x30);
 
 class bhkWorldRayCastData {
 public:
@@ -212,7 +212,7 @@ public:
 	hkRayHitCollector*		RayHitCollector2;		// 78
 	UInt32					pad7C;
 };
-assert(sizeof(bhkWorldRayCastData) == 0x80);
+static_assert(sizeof(bhkWorldRayCastData) == 0x80);
 
 class hkWorld : public hkRefObject {
 public:
@@ -224,26 +224,26 @@ public:
 	hkVector4	gravity;				// 020
 	// More...
 };
-assert(sizeof(hkWorld) == 0x030);
+static_assert(sizeof(hkWorld) == 0x030);
 
 class hkShape : public hkRefObject {
 public:
 	bhkRefObject*		bRefObject;		// 008
 };
-assert(sizeof(hkShape) == 0x00C);
+static_assert(sizeof(hkShape) == 0x00C);
 
 class hkPackedNiTriStripsShape : public hkShape {
 public:
 	UInt32						unk0C;					// 00C
 	hkPackedNiTriStripsData*	PackedNiTriStripsData;	// 010
 };
-assert(sizeof(hkPackedNiTriStripsShape) == 0x14);
+static_assert(sizeof(hkPackedNiTriStripsShape) == 0x14);
 
 class hkScaledMoppBvTreeShape : public hkShape {
 public:
 	hkPackedNiTriStripsShape*	PackedNiTriStripsShape;		// 00C
 };
-assert(sizeof(hkScaledMoppBvTreeShape) == 0x010);
+static_assert(sizeof(hkScaledMoppBvTreeShape) == 0x010);
 
 class hkRigidBody : public hkRefObject {
 public:
@@ -285,4 +285,4 @@ public:
 	UInt16				unk08E;			// 08E
 	UInt32				unk090;
 };
-assert(sizeof(hkRigidBody) == 0x94);
+static_assert(sizeof(hkRigidBody) == 0x94);
