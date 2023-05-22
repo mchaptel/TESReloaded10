@@ -9,11 +9,11 @@ void OcclusionManager::Initialize() {
 	UINT OcclusionMapSizeX = TheRenderManager->width / TheSettingManager->SettingsMain.OcclusionCulling.OcclusionMapRatio;
 	UINT OcclusionMapSizeY = TheRenderManager->height / TheSettingManager->SettingsMain.OcclusionCulling.OcclusionMapRatio;
 #if !DEBUGOC	
-	char* VertexShaderName = "OcclusionMap.vso";
-	char* PixelShaderName = "OcclusionMap.pso";
+	const char* VertexShaderName = "OcclusionMap.vso";
+	const char* PixelShaderName = "OcclusionMap.pso";
 #else
-	char* VertexShaderName = "OcclusionMapDebug.vso";
-	char* PixelShaderName = "OcclusionMapDebug.pso";
+	const char* VertexShaderName = "OcclusionMapDebug.vso";
+	const char* PixelShaderName = "OcclusionMapDebug.pso";
 #endif
 
 	TheOcclusionManager->WaterOccluded = false;

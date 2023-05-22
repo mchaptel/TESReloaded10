@@ -1021,7 +1021,7 @@ void ShaderManager::UpdateConstants() {
 	ShaderConst.Water.waterSettings.x = Tes->GetWaterHeight(Player, WorldSceneGraph);
 	ShaderConst.Water.waterSettings.z = isUnderwater;
 
-	float updateDelay = 0.01;
+	float updateDelay = 0.01f;
 
 	if (currentCell) {
 		ShaderConst.SunTiming.x = WorldSky->GetSunriseColorBegin();
@@ -1078,7 +1078,7 @@ void ShaderManager::UpdateConstants() {
 				// moonphase goes from 0 to 8
 				float MoonPhase = (fmod(DaysPassed, 8 * currentClimate->phaseLength & 0x3F)) / (currentClimate->phaseLength & 0x3F);
 
-				float PI = 3.1416; // use cos curve to fade moon light shadows strength
+				float PI = 3.14159f; // use cos curve to fade moon light shadows strength
 				MoonPhase = lerp(-PI, PI, MoonPhase / 8) - PI / 4; // map moonphase to 1/2PI/2PI + 1/2
 
 				// map MoonVisibility to MinNightDarkness/1 range
@@ -1252,7 +1252,7 @@ void ShaderManager::UpdateConstants() {
 			ShaderConst.BloodLens.Percent = 0.0f;
 			ShaderConst.WaterLens.Percent = -1.0f;
 			ShaderConst.Animators.WaterLensAnimator.switched = true;
-			ShaderConst.Animators.WaterLensAnimator.Start(0.0, 0);
+			ShaderConst.Animators.WaterLensAnimator.Start(0.0f, 0);
 		}
 
 		if (Effects.WaterLens->Enabled) {
@@ -1264,7 +1264,7 @@ void ShaderManager::UpdateConstants() {
 				ShaderConst.WaterLens.Time.y = TheSettingManager->GetSettingF("Shaders.WaterLens.Main", "TimeMultB");
 				ShaderConst.WaterLens.Time.z = TheSettingManager->GetSettingF("Shaders.WaterLens.Main", "Viscosity");
 				ShaderConst.Animators.WaterLensAnimator.Initialize(1);
-				ShaderConst.Animators.WaterLensAnimator.Start(0.01, 0);
+				ShaderConst.Animators.WaterLensAnimator.Start(0.01f, 0);
 			}
 			ShaderConst.WaterLens.Percent = ShaderConst.Animators.WaterLensAnimator.GetValue();
 			ShaderConst.WaterLens.Time.w = TheSettingManager->GetSettingF("Shaders.WaterLens.Main", "Amount") * ShaderConst.WaterLens.Percent;
@@ -1277,14 +1277,14 @@ void ShaderManager::UpdateConstants() {
 				ShaderConst.WetWorld.Data.y = 1.0f;
 				ShaderConst.Animators.PuddlesAnimator.Start(TheSettingManager->GetSettingF("Shaders.WetWorld.Main", "Increase"), 1);
 				ShaderConst.Animators.RainAnimator.switched = true;
-				ShaderConst.Animators.RainAnimator.Start(0.05, 1);
+				ShaderConst.Animators.RainAnimator.Start(0.05f, 1);
 			}
 			else if (!isRainy && ShaderConst.Animators.RainAnimator.switched) {
 				// it just stopped raining
 				ShaderConst.WetWorld.Data.y = 0.0f;
 				ShaderConst.Animators.PuddlesAnimator.Start(TheSettingManager->GetSettingF("Shaders.WetWorld.Main", "Decrease"), 0);
 				ShaderConst.Animators.RainAnimator.switched = false;
-				ShaderConst.Animators.RainAnimator.Start(0.07, 0);
+				ShaderConst.Animators.RainAnimator.Start(0.07f, 0);
 			}
 			ShaderConst.WetWorld.Data.x = ShaderConst.Animators.RainAnimator.GetValue();
 			ShaderConst.WetWorld.Data.z = ShaderConst.Animators.PuddlesAnimator.GetValue();
@@ -1309,15 +1309,15 @@ void ShaderManager::UpdateConstants() {
 				// Snow fall
 				if (isSnow && ShaderConst.Animators.SnowAnimator.switched == false) {
 					// it just started snowing
-					ShaderConst.Animators.PuddlesAnimator.Start(0.3, 0); // fade out any puddles if they exist
+					ShaderConst.Animators.PuddlesAnimator.Start(0.3f, 0); // fade out any puddles if they exist
 					ShaderConst.Animators.SnowAnimator.switched = true;
 					ShaderConst.Animators.SnowAnimator.Initialize(0);
-					ShaderConst.Animators.SnowAnimator.Start(0.5, 1);
+					ShaderConst.Animators.SnowAnimator.Start(0.5f, 1);
 				}
 				else if (!isSnow && ShaderConst.Animators.SnowAnimator.switched) {
 					// it just stopped snowing
 					ShaderConst.Animators.SnowAnimator.switched = false;
-					ShaderConst.Animators.SnowAnimator.Start(0.2, 0);
+					ShaderConst.Animators.SnowAnimator.Start(0.2f, 0);
 				}
 				ShaderConst.Snow.SnowData.x = ShaderConst.Animators.SnowAnimator.GetValue();
 
