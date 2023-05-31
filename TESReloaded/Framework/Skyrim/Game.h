@@ -100,7 +100,7 @@ class TESLoadScreen;
 class TESEffectShader;
 class TESRegionDataManager;
 class TESPackageData;
-class TESChildCell { public: virtual TESObjectCELL* GetChildCell(); }; assert(sizeof(TESChildCell) == 0x004);
+class TESChildCell { public: virtual TESObjectCELL* GetChildCell(); }; static_assert(sizeof(TESChildCell) == 0x004);
 class TESImageSpace;
 class TESImageSpaceModifier;
 class TESReputation;
@@ -551,7 +551,7 @@ public:
 	UInt32		typeID;		// ParamType
 	UInt32		isOptional;
 };
-assert(sizeof(CommandParam) == 0x00C);
+static_assert(sizeof(CommandParam) == 0x00C);
 
 struct CommandArgs {
 	CommandParam*	 paramInfo;		// 00
@@ -563,7 +563,7 @@ struct CommandArgs {
 	double*			 result;		// 18
 	UInt32*			 opcodeOffset;	// 1C
 };
-assert(sizeof(CommandArgs) == 0x020);
+static_assert(sizeof(CommandArgs) == 0x020);
 
 struct CommandInfo {
 	const char*		longName;		// 00
@@ -578,7 +578,7 @@ struct CommandInfo {
 	void*			eval;			// 20
 	UInt32			flags;			// 24
 };
-assert(sizeof(CommandInfo) == 0x028);
+static_assert(sizeof(CommandInfo) == 0x028);
 
 class CommandTable {
 public:
@@ -731,7 +731,7 @@ public:
 
 	Entry First;
 };
-assert(sizeof(TList<void>) == 0x008);
+static_assert(sizeof(TList<void>) == 0x008);
 
 template <class T>
 class TArray {
@@ -740,7 +740,7 @@ public:
 	UInt32	capacity;
 	UInt32	count;
 };
-assert(sizeof(TArray<void>) == 0x00C);
+static_assert(sizeof(TArray<void>) == 0x00C);
 
 class RGBA {
 public:
@@ -749,7 +749,7 @@ public:
 	UInt8	b;
 	UInt8	a;
 };
-assert(sizeof(RGBA) == 0x004);
+static_assert(sizeof(RGBA) == 0x004);
 
 class SimpleLock {
 public:
@@ -764,7 +764,7 @@ class BSIntrusiveRefCounted {
 public:
 	volatile UInt32		m_refCount;		// 00
 };
-assert(sizeof(BSIntrusiveRefCounted) == 0x04);
+static_assert(sizeof(BSIntrusiveRefCounted) == 0x04);
 
 template <typename T>
 class BSTEventSink {
@@ -772,7 +772,7 @@ public:
 	virtual ~BSTEventSink();
 	virtual	UInt32	ReceiveEvent(T* evn, void* dispatcher); // pure virtual	EventResult	ReceiveEvent(T * evn, EventDispatcher<T> * dispatcher);
 };
-assert(sizeof(BSTEventSink<void>) == 0x04);
+static_assert(sizeof(BSTEventSink<void>) == 0x04);
 
 template <typename T>
 class EventDispatcher {
@@ -784,7 +784,7 @@ public:
 	UInt8						stateFlag;			// 02C - some internal state changed while sending
 	UInt8						pad[3];
 };
-assert(sizeof(EventDispatcher<void>) == 0x30);
+static_assert(sizeof(EventDispatcher<void>) == 0x30);
 
 class BSString {
 public:
@@ -792,7 +792,7 @@ public:
 	UInt16		m_dataLen;  // 04
 	UInt16		m_bufLen;	// 06
 };
-assert(sizeof(BSString) == 0x008);
+static_assert(sizeof(BSString) == 0x008);
 
 class InputEvent {
 public:
@@ -813,7 +813,7 @@ public:
 	UInt32			eventType;	// 08
 	InputEvent*		next;		// 0C
 };
-assert(sizeof(InputEvent) == 0x10);
+static_assert(sizeof(InputEvent) == 0x10);
 
 class ButtonEvent : public InputEvent {
 public:
@@ -822,7 +822,7 @@ public:
 	UInt32			flags;		// 18 (00000038 when ALT is pressed, 0000001D when STRG is pressed)
 	float			timer;		// 1C (hold duration)
 };
-assert(sizeof(ButtonEvent) == 0x20);
+static_assert(sizeof(ButtonEvent) == 0x20);
 
 class PlayerInputHandler {
 public:
@@ -835,7 +835,7 @@ public:
 	UInt8		unk04;			// 04
 	UInt8		pad04[3];
 };
-assert(sizeof(PlayerInputHandler) == 0x08);
+static_assert(sizeof(PlayerInputHandler) == 0x08);
 
 class InputStringHolder {
 public:
@@ -946,7 +946,7 @@ public:
 	BSFixedString	localMapMoveMode;	// 198 "LocalMapMoveMode"
 	BSFixedString	itemZoom;			// 19C "Item Zoom"
 };
-assert(sizeof(InputStringHolder) == 0x1A0);
+static_assert(sizeof(InputStringHolder) == 0x1A0);
 
 class UIStringHolder {
 public:
@@ -1214,7 +1214,7 @@ public:
 
 	BSExtraData*	next;		// 04	
 };
-assert(sizeof(BSExtraData) == 0x08);
+static_assert(sizeof(BSExtraData) == 0x08);
 
 class InventoryChanges : public BSExtraData {
 public:
@@ -1237,7 +1237,7 @@ public:
 
 	Data*	data;			// 08
 };
-assert(sizeof(InventoryChanges) == 0x0C);
+static_assert(sizeof(InventoryChanges) == 0x0C);
 
 class ExtraDataList {
 public:
@@ -1254,7 +1254,7 @@ public:
 	BSExtraData*			m_data;				// 000
 	PresenceBitfield*		m_presenceBitfield;	// 004 - if a bit is set, then the extralist should contain that extradata - bits are numbered starting from the lsb
 };
-assert(sizeof(ExtraDataList) == 0x08);
+static_assert(sizeof(ExtraDataList) == 0x08);
 
 class MagicTarget {
 public:
@@ -1274,7 +1274,7 @@ public:
 	UInt32	unk04;		// 04
 	UInt32	unk08;		// 08
 };
-assert(sizeof(MagicTarget) == 0xC);
+static_assert(sizeof(MagicTarget) == 0xC);
 
 class BaseFormComponent {
 public:
@@ -1283,14 +1283,14 @@ public:
 	virtual void	ReleaseRefs();
 	virtual void	CopyFromBase(BaseFormComponent* rhs);
 };
-assert(sizeof(BaseFormComponent) == 0x04);
+static_assert(sizeof(BaseFormComponent) == 0x04);
 
 class TESDescription : public BaseFormComponent {
 public:
 	UInt32	unk04;	// 04
 	UInt32	unk08;	// 08 - init'd to FFFFFFFF
 };
-assert(sizeof(TESDescription) == 0x0C);
+static_assert(sizeof(TESDescription) == 0x0C);
 
 class TESModel : public BaseFormComponent {
 public:
@@ -1305,16 +1305,16 @@ public:
 	UInt8			unk12;	// 12
 	UInt8			unk13;	// 13
 };
-assert(sizeof(TESModel) == 0x14);
+static_assert(sizeof(TESModel) == 0x14);
 
 class TESTexture : public BaseFormComponent {
 public:
 	BSFixedString	ddsPath;		// 04
 };
-assert(sizeof(TESTexture) == 0x08);
+static_assert(sizeof(TESTexture) == 0x08);
 
 class TESIcon : public TESTexture {};
-assert(sizeof(TESIcon) == 0x08);
+static_assert(sizeof(TESIcon) == 0x08);
 
 class TESFullName : public BaseFormComponent {
 public:
@@ -1323,7 +1323,7 @@ public:
 
 	BSFixedString	name;	// 04
 };
-assert(sizeof(TESFullName) == 0x08);
+static_assert(sizeof(TESFullName) == 0x08);
 
 class TESEnchantableForm : public BaseFormComponent {
 public:
@@ -1333,19 +1333,19 @@ public:
 	UInt16				unk08;			// 08 - init'd to 3
 	UInt16				maxCharge;
 };
-assert(sizeof(TESEnchantableForm) == 0x0C);
+static_assert(sizeof(TESEnchantableForm) == 0x0C);
 
 class TESValueForm : public BaseFormComponent {
 public:
 	UInt32	value;
 };
-assert(sizeof(TESValueForm) == 0x008);
+static_assert(sizeof(TESValueForm) == 0x008);
 
 class TESWeightForm : public BaseFormComponent {
 public:
 	float	weight;
 };
-assert(sizeof(TESWeightForm) == 0x008);
+static_assert(sizeof(TESWeightForm) == 0x008);
 
 class TESAttackDamageForm : public BaseFormComponent {
 public:
@@ -1354,7 +1354,7 @@ public:
 	UInt16	attackDamage;	// 04
 	UInt8	pad06[2];		// 06
 };
-assert(sizeof(TESAttackDamageForm) == 0x8);
+static_assert(sizeof(TESAttackDamageForm) == 0x8);
 
 class BGSDestructibleObjectForm : public BaseFormComponent {
 public:
@@ -1371,7 +1371,7 @@ public:
 
 	Data*	data;	// 04
 };
-assert(sizeof(BGSDestructibleObjectForm) == 0x8);
+static_assert(sizeof(BGSDestructibleObjectForm) == 0x8);
 
 class BGSEquipType : public BaseFormComponent {
 public:
@@ -1380,33 +1380,33 @@ public:
 
 	BGSEquipType*	unk04;	// 04
 };
-assert(sizeof(BGSEquipType) == 0x8);
+static_assert(sizeof(BGSEquipType) == 0x8);
 
 class BGSPreloadable : public BaseFormComponent {
 public:
 	virtual void	Unk_04();	// pure virtual
 };
-assert(sizeof(BGSPreloadable) == 0x4);
+static_assert(sizeof(BGSPreloadable) == 0x4);
 
 class BGSMessageIcon : public BaseFormComponent {
 public:
 	TESIcon		icon;	// 04
 };
-assert(sizeof(BGSMessageIcon) == 0xC);
+static_assert(sizeof(BGSMessageIcon) == 0xC);
 
 class BGSPickupPutdownSounds : public BaseFormComponent {
 public:
 	BGSSoundDescriptorForm*		pickUp;		// 04
 	BGSSoundDescriptorForm*		putDown;	// 08
 };
-assert(sizeof(BGSPickupPutdownSounds) == 0xC);
+static_assert(sizeof(BGSPickupPutdownSounds) == 0xC);
 
 class BGSBlockBashData : public BaseFormComponent {
 public:
 	UInt32	unk04;	// 04
 	UInt32	unk08;	// 08
 };
-assert(sizeof(BGSBlockBashData) == 0xC);
+static_assert(sizeof(BGSBlockBashData) == 0xC);
 
 class BGSKeywordForm : public BaseFormComponent {
 public:
@@ -1416,7 +1416,7 @@ public:
 	BGSKeyword**	keywords;		// 04
 	UInt32			numKeywords;	// 08
 };
-assert(sizeof(BGSKeywordForm) == 0xC);
+static_assert(sizeof(BGSKeywordForm) == 0xC);
 
 class TESModelTextureSwap : public TESModel {
 public:
@@ -1430,7 +1430,7 @@ public:
 	SwapInfo*		swaps;	// 14
 	UInt32			count;		// 18
 };
-assert(sizeof(TESModelTextureSwap) == 0x1C);
+static_assert(sizeof(TESModelTextureSwap) == 0x1C);
 
 class TESForm : public BaseFormComponent {
 public:
@@ -1647,7 +1647,7 @@ public:
 	UInt8	formType;	// 12
 	UInt8	pad13;		// 13
 };
-assert(sizeof(TESForm) == 0x14);
+static_assert(sizeof(TESForm) == 0x14);
 
 class TESPackage : public TESForm {
 public:
@@ -1739,7 +1739,7 @@ public:
 	UInt32	unk78;			// 78
 	UInt32	unk7C;			// 7C - incremented in dtor
 };
-assert(sizeof(TESPackage) == 0x80);
+static_assert(sizeof(TESPackage) == 0x80);
 
 class TESWeather : public TESForm {
 public:
@@ -1874,14 +1874,14 @@ public:
 	void*			particleShader;					// 758 BGSShaderParticleGeometryData*
 	void*			referenceEffect;				// 75C BGSReferenceEffect*
 };
-assert(sizeof(TESWeather) == 0x760);
+static_assert(sizeof(TESWeather) == 0x760);
 
 class TESWeatherEx : public TESWeather {
 public:
 	ColorData	colorsb[kNumColorTypes];
 	char		EditorName[40];
 };
-assert(sizeof(TESWeatherEx) == 0x898);
+static_assert(sizeof(TESWeatherEx) == 0x898);
 
 class TESIdleForm : public TESForm {
 public:
@@ -1916,7 +1916,7 @@ public:
 	BSFixedString		animationEvent;	// 30
 	BSString			editorId;		// 34
 };
-assert(sizeof(TESIdleForm) == 0x3C);
+static_assert(sizeof(TESIdleForm) == 0x3C);
 
 class TESClimate : public TESForm {
 public:
@@ -1937,7 +1937,7 @@ public:
 	UInt8		moonInfo;		// 45
 	UInt8		pad46[2];		// 46
 };
-assert(sizeof(TESClimate) == 0x48);
+static_assert(sizeof(TESClimate) == 0x48);
 
 class TESWaterForm : public TESForm {
 public:
@@ -2068,7 +2068,7 @@ public:
 	Data1C8				unk1BC;		// 1BC
 	Data1C8				unk1C8;		// 1C8
 };
-assert(sizeof(TESWaterForm) == 0x1D4);
+static_assert(sizeof(TESWaterForm) == 0x1D4);
 
 class TESWorldSpace : public TESForm {
 public:
@@ -2136,7 +2136,7 @@ public:
 	UInt32					unk16C;		// 16C
 	UInt32					unk170;		// 170
 };
-assert(sizeof(TESWorldSpace) == 0x174);
+static_assert(sizeof(TESWorldSpace) == 0x174);
 
 class TESGlobal : public TESForm {
 public:
@@ -2145,7 +2145,7 @@ public:
 	UInt8		pad[3];	// 1D
 	float		data;	// 20
 };
-assert(sizeof(TESGlobal) == 0x24);
+static_assert(sizeof(TESGlobal) == 0x24);
 
 class TESRegion : public TESForm {
 public:
@@ -2155,13 +2155,13 @@ public:
 	TESWeather*		weather;		// 20
 	UInt32			unk24[3];		// 24
 };
-assert(sizeof(TESRegion) == 0x30);
+static_assert(sizeof(TESRegion) == 0x30);
 
 class TESRegionEx : public TESRegion {
 public:
 	char		EditorName[40];
 };
-assert(sizeof(TESRegionEx) == 0x058);
+static_assert(sizeof(TESRegionEx) == 0x058);
 
 class BGSStoryManagerTreeForm : public TESForm {
 public:
@@ -2236,7 +2236,7 @@ public:
 	UInt32				unk148;		// 148
 	TArray<UInt32>		unk14C;		// 14C
 };
-assert(sizeof(TESQuest) == 0x158);
+static_assert(sizeof(TESQuest) == 0x158);
 
 class TESObject : public TESForm {
 public:
@@ -2255,7 +2255,7 @@ public:
 	virtual UInt32	Unk_45();
 	virtual void*	Unk_46();
 };
-assert(sizeof(TESObject) == 0x14);
+static_assert(sizeof(TESObject) == 0x14);
 
 class ActorValueInfo : public TESForm {
 public:
@@ -2284,7 +2284,7 @@ public:
 	BGSSkillPerkTreeNode*	perkTree;			// BC - BGSSkillPerkTreeNode
 	UInt8					padC0[8];	// C0 - ? not initialized
 };
-assert(sizeof(ActorValueInfo) == 0xC8);
+static_assert(sizeof(ActorValueInfo) == 0xC8);
 
 class TESBoundObject : public TESObject {
 public:
@@ -2309,10 +2309,10 @@ public:
 	Bound	bounds;		// 14
 	Bound	bounds2;	// 1A
 };
-assert(sizeof(TESBoundObject) == 0x20);
+static_assert(sizeof(TESBoundObject) == 0x20);
 
 class TESBoundAnimObject : public TESBoundObject {};
-assert(sizeof(TESBoundAnimObject) == 0x20);
+static_assert(sizeof(TESBoundAnimObject) == 0x20);
 
 class TESSound : public TESBoundAnimObject {
 public:
@@ -2321,7 +2321,7 @@ public:
 
 	BGSSoundDescriptorForm* descriptor;	// 20
 };
-assert(sizeof(TESSound) == 0x24);
+static_assert(sizeof(TESSound) == 0x24);
 
 class TESObjectLIGH : public TESBoundAnimObject {
 public:
@@ -2358,7 +2358,7 @@ public:
 	UInt32						unkA4;			// A4
 	DataA8						unkA8;			// A8
 };
-assert(sizeof(TESObjectLIGH) == 0xB4);
+static_assert(sizeof(TESObjectLIGH) == 0xB4);
 
 class TESObjectWEAP : public TESBoundObject {
 public:
@@ -2466,7 +2466,7 @@ public:
 	BSFixedString				embeddedNode;	// 12C
 	UInt32						pad130;			// 130
 };
-assert(sizeof(TESObjectWEAP) == 0x134);
+static_assert(sizeof(TESObjectWEAP) == 0x134);
 
 class BGSPerkEntry {
 public:
@@ -2476,7 +2476,7 @@ public:
 	UInt8	priority;		// 05
 	UInt16	type;			// 06
 };
-assert(sizeof(BGSPerkEntry) == 0x08);
+static_assert(sizeof(BGSPerkEntry) == 0x08);
 
 class Condition {
 public:
@@ -2516,7 +2516,7 @@ public:
 	UInt8		comparisonType;			// 1C
 	UInt8		referenceType;			// 1D
 };
-assert(sizeof(Condition) == 0x20);
+static_assert(sizeof(Condition) == 0x20);
 
 class BGSPerk : public TESForm {
 public:
@@ -2539,7 +2539,7 @@ public:
 	TArray<BGSPerkEntry*>	perkEntries;	// 3C
 	BGSPerk*				nextPerk;		// 48
 };
-assert(sizeof(BGSPerk) == 0x4C);
+static_assert(sizeof(BGSPerk) == 0x4C);
 
 class TESObjectREFRData {
 public:
@@ -2554,7 +2554,7 @@ public:
 	NiNode* node;			// 20
 	// ... probably more
 };
-assert(sizeof(TESObjectREFRData) == 0x24);
+static_assert(sizeof(TESObjectREFRData) == 0x24);
 
 class TESObjectCELL : public TESForm {
 public:
@@ -2637,7 +2637,7 @@ public:
 	UInt32					unk88;			// 88
 	BGSLightingTemplate*	lightingTemplate;	// 8C
 };
-assert(sizeof(TESObjectCELL) == 0x90);
+static_assert(sizeof(TESObjectCELL) == 0x90);
 
 class TESObjectREFR : public TESForm {
 public:
@@ -2754,7 +2754,7 @@ public:
 	ExtraDataList		extraDataList;		// 48
 	UInt32				unk50;				// flags?
 };
-assert(sizeof(TESObjectREFR) == 0x54);
+static_assert(sizeof(TESObjectREFR) == 0x54);
 
 class ActorValuesOwner {
 public:
@@ -2768,7 +2768,7 @@ public:
 	virtual void	SetCurrent(UInt32 arg0, float arg1);
 	virtual bool	Unk_08();
 };
-assert(sizeof(ActorValuesOwner) == 0x4);
+static_assert(sizeof(ActorValuesOwner) == 0x4);
 
 class ActorState {
 public:
@@ -2787,7 +2787,7 @@ public:
 
 	bool IsWeaponOut() { return (flags08 >> 5 & 7) >= 3; }
 };
-assert(sizeof(ActorState) == 0x0C);
+static_assert(sizeof(ActorState) == 0x0C);
 
 class HighProcess {
 public:
@@ -2913,7 +2913,7 @@ public:
 	float			actorAlpha;	// 1B4
 	// More?...
 };
-assert(sizeof(HighProcess) == 0x1B8);
+static_assert(sizeof(HighProcess) == 0x1B8);
 
 class ActorProcessManager {
 public:
@@ -2946,7 +2946,7 @@ public:
 	SInt8				unk9B;						// 9B
 	UInt8				unk9C[(0xA0 - 0x9C)];		// 9C
 };
-assert(sizeof(ActorProcessManager) == 0xA0);
+static_assert(sizeof(ActorProcessManager) == 0xA0);
 
 class EquipManager {
 public:
@@ -2957,7 +2957,7 @@ public:
 	UInt8	Initialized;	// 00
 	UInt8	pad00[3];
 };
-assert(sizeof(EquipManager) == 0x04);
+static_assert(sizeof(EquipManager) == 0x04);
 
 class Actor : public TESObjectREFR {
 public:
@@ -3121,10 +3121,10 @@ public:
 	UInt32					flags138;						// 138 Burgling house: flags138 >> 12 & 1
 	UInt32					unk13C[(0x19C - 0x13C) >> 2];
 };
-assert(sizeof(Actor) == 0x19C);
+static_assert(sizeof(Actor) == 0x19C);
 
 class Character : public Actor {};
-assert(sizeof(Character) == 0x19C);
+static_assert(sizeof(Character) == 0x19C);
 
 class TESCameraState {
 public:
@@ -3158,7 +3158,7 @@ public:
 	PlayerCamera*			camera;			// 08
 	UInt32					stateId;		// 0C
 };
-assert(sizeof(TESCameraState) == 0x010);
+static_assert(sizeof(TESCameraState) == 0x010);
 
 class DragonCameraState : public TESCameraState {
 public:
@@ -3175,7 +3175,7 @@ public:
 	UInt8					padBB;
 	// More
 };
-assert(sizeof(DragonCameraState) == 0x0BC);
+static_assert(sizeof(DragonCameraState) == 0x0BC);
 
 class HorseCameraState : public TESCameraState {
 public:
@@ -3192,19 +3192,19 @@ public:
 	UInt8					padBB;
 	// More
 };
-assert(sizeof(HorseCameraState) == 0x0BC);
+static_assert(sizeof(HorseCameraState) == 0x0BC);
 
 class TweenMenuCameraState : public TESCameraState {
 public:
 	UInt32	unk10[0x0C];	// 10
 };
-assert(sizeof(TweenMenuCameraState) == 0x040);
+static_assert(sizeof(TweenMenuCameraState) == 0x040);
 
 class VATSCameraState : public TESCameraState {
 public:
 	UInt32	unk10[0x03];	// 10
 };
-assert(sizeof(VATSCameraState) == 0x01C);
+static_assert(sizeof(VATSCameraState) == 0x01C);
 
 class FreeCameraState : public TESCameraState {
 public:
@@ -3215,10 +3215,10 @@ public:
 	UInt8					unk36;				// 36
 	UInt8					unk37;				// 37
 };
-assert(sizeof(FreeCameraState) == 0x038);
+static_assert(sizeof(FreeCameraState) == 0x038);
 
 class AutoVanityState : public TESCameraState { };
-assert(sizeof(AutoVanityState) == 0x010);
+static_assert(sizeof(AutoVanityState) == 0x010);
 
 class FurnitureCameraState : public TESCameraState {
 public:
@@ -3234,13 +3234,13 @@ public:
 	UInt8	unk2E;	// 2E
 	UInt8	pad2F;	// 2F
 };
-assert(sizeof(FurnitureCameraState) == 0x030);
+static_assert(sizeof(FurnitureCameraState) == 0x030);
 
 class IronSightsState : public TESCameraState {
 public:
 	UInt32	unk10;	// 10
 };
-assert(sizeof(IronSightsState) == 0x014);
+static_assert(sizeof(IronSightsState) == 0x014);
 
 class FirstPersonState : public TESCameraState {
 public:
@@ -3255,7 +3255,7 @@ public:
 	UInt8					pad3D;				// 3D
 	UInt16					pad3E;				// 3E
 };
-assert(sizeof(FirstPersonState) == 0x040);
+static_assert(sizeof(FirstPersonState) == 0x040);
 
 class ThirdPersonState : public TESCameraState {
 public:
@@ -3312,7 +3312,7 @@ public:
 	UInt8					TogglePOV;					// BA
 	UInt8					padBA;
 };
-assert(sizeof(ThirdPersonState) == 0xBC);
+static_assert(sizeof(ThirdPersonState) == 0xBC);
 
 class BleedoutCameraState : public TESCameraState {
 public:
@@ -3329,7 +3329,7 @@ public:
 	UInt8					padBB;
 	// More
 };
-assert(sizeof(BleedoutCameraState) == 0xBC);
+static_assert(sizeof(BleedoutCameraState) == 0xBC);
 
 class PlayerCameraTransitionState : public TESCameraState {
 public:
@@ -3338,7 +3338,7 @@ public:
 	UInt8	unk25;			// 25
 	UInt16	pad26;
 };
-assert(sizeof(PlayerCameraTransitionState) == 0x28);
+static_assert(sizeof(PlayerCameraTransitionState) == 0x28);
 
 class TESCamera {
 public:
@@ -3355,7 +3355,7 @@ public:
 	UInt8			unk24;			// 24
 	UInt8			pad24[3];
 };
-assert(sizeof(TESCamera) == 0x28);
+static_assert(sizeof(TESCamera) == 0x28);
 
 class PlayerCamera : public TESCamera {
 public:	
@@ -3393,7 +3393,7 @@ public:
 	UInt8							unkD5;										// D5
 	UInt8							padD5[2];
 };
-assert(sizeof(PlayerCamera) == 0xD8);
+static_assert(sizeof(PlayerCamera) == 0xD8);
 
 class PlayerSkills {
 public:
@@ -3418,7 +3418,7 @@ public:
 
 	StatData* data;		// 00
 };
-assert(sizeof(PlayerSkills) == 0x04);
+static_assert(sizeof(PlayerSkills) == 0x04);
 
 class PlayerCharacter : public Character {
 public:
@@ -3484,7 +3484,7 @@ public:
 	UInt8				unk727;							// 727
 	UInt32				unk728;							// 728
 };
-assert(sizeof(PlayerCharacter) == 0x72C);
+static_assert(sizeof(PlayerCharacter) == 0x72C);
 
 class PlayerControls {
 public:
@@ -3553,7 +3553,7 @@ public:
 	UInt8				unk15C;					// 15C
 	UInt8				pad15C[3];
 };
-assert(sizeof(PlayerControls) == 0x160);
+static_assert(sizeof(PlayerControls) == 0x160);
 
 class BSInputDevice {
 public:
@@ -3574,7 +3574,7 @@ public:
 	UInt32			unk008;							// 08
 	UInt32			unk00C;							// 0C	
 };
-assert(sizeof(BSInputDevice) == 0x10);
+static_assert(sizeof(BSInputDevice) == 0x10);
 
 class BSWin32KeyboardDevice : public BSInputDevice {
 public:
@@ -3588,7 +3588,7 @@ public:
 	UInt8			PreviousKeyState[0x100];		// F4
 	UInt8			CurrentKeyState[0x100];			// 1F4
 };
-assert(sizeof(BSWin32KeyboardDevice) == 0x2F4);
+static_assert(sizeof(BSWin32KeyboardDevice) == 0x2F4);
 
 class BSWin32MouseDevice : public BSInputDevice {
 public:
@@ -3604,10 +3604,10 @@ public:
 	DIMOUSESTATE2	CurrentMouseState;				// 44
 	UInt32			unk058;							// 58
 };
-assert(sizeof(BSWin32MouseDevice) == 0x5C);
+static_assert(sizeof(BSWin32MouseDevice) == 0x5C);
 
 class BSWin32GamepadDevice : public BSInputDevice {};
-assert(sizeof(BSWin32MouseDevice) == 0x5C);
+static_assert(sizeof(BSWin32MouseDevice) == 0x5C);
 
 class InputEventDispatcher : public EventDispatcher<InputEvent> {
 public:
@@ -3616,7 +3616,7 @@ public:
 	BSWin32MouseDevice*		mouse;		// 038
 	BSWin32GamepadDevice*	gamepad;	// 03C
 };
-assert(sizeof(InputEventDispatcher) == 0x040);
+static_assert(sizeof(InputEventDispatcher) == 0x040);
 
 class SkyObject {
 public:
@@ -3627,7 +3627,7 @@ public:
 
 	NiNode* RootNode;		// 04
 };
-assert(sizeof(SkyObject) == 0x08);
+static_assert(sizeof(SkyObject) == 0x08);
 
 class Atmosphere : public SkyObject {
 public:
@@ -3639,14 +3639,14 @@ public:
 	UInt32	unk14;	// 14
 	UInt32	unk18;	// 18
 };
-assert(sizeof(Atmosphere) == 0x1C);
+static_assert(sizeof(Atmosphere) == 0x1C);
 
 class Stars : public SkyObject {
 public:
 	UInt32	unk08;	// 08
 	UInt32	unk0C;	// 0C
 };
-assert(sizeof(Stars) == 0x10);
+static_assert(sizeof(Stars) == 0x10);
 
 class Sun : public SkyObject {
 public:
@@ -3662,13 +3662,13 @@ public:
 	UInt8		pad29[3];	// 29
 	UInt32		unk2C;	// 2C - BSShaderAccumulator
 };
-assert(sizeof(Sun) == 0x30);
+static_assert(sizeof(Sun) == 0x30);
 
 class Clouds : public SkyObject {
 public:
 	UInt32	unk08[(0x38C - 0x08) >> 2];		// 08
 };
-assert(sizeof(Clouds) == 0x38C);
+static_assert(sizeof(Clouds) == 0x38C);
 
 class Moon : public SkyObject {
 public:
@@ -3695,7 +3695,7 @@ public:
 	UInt32	unk58;		// 58
 	UInt32	unk5C[(0x7C - 0x5C) >> 2];
 };
-assert(sizeof(Moon) == 0x7C);
+static_assert(sizeof(Moon) == 0x7C);
 
 class Precipitation : public SkyObject {
 public:
@@ -3705,7 +3705,7 @@ public:
 	float	unk14;	// 14
 	float	unk18;	// 18
 };
-assert(sizeof(Precipitation) == 0x1C);
+static_assert(sizeof(Precipitation) == 0x1C);
 
 class Sky {
 public:
@@ -3764,7 +3764,7 @@ public:
 	void*			skyEffectController;			// 210
 	UInt32			unk214[(0x238 - 0x214) >> 2];	// 214
 };
-assert(sizeof(Sky) == 0x238);
+static_assert(sizeof(Sky) == 0x238);
 
 class GridArray {
 public:
@@ -3779,7 +3779,7 @@ public:
 	virtual void Fn_08();
 	virtual void Fn_09();
 };
-assert(sizeof(GridArray) == 0x04);
+static_assert(sizeof(GridArray) == 0x04);
 
 class GridCellArray : public GridArray {
 public:
@@ -3793,7 +3793,7 @@ public:
 	UInt8			unk20;		// 20
 	UInt8			pad20[3];
 };
-assert(sizeof(GridCellArray) == 0x24);
+static_assert(sizeof(GridCellArray) == 0x24);
 
 class TES {
 public:
@@ -3868,7 +3868,7 @@ public:
 	UInt32				navMeshInfoMap;		// NavMeshInfoMap
 	void*				loadedAreaBound;	// E4 LoadedAreaBound*
 };
-assert(sizeof(TES) == 0xE8);
+static_assert(sizeof(TES) == 0xE8);
 
 class Menu { // Wrapper class for compatibility with OR/NVR
 public:
@@ -3884,7 +3884,7 @@ public:
 		kMenuType_Persuasion = 0x40A,
 	};
 };
-assert(sizeof(Menu) == 0x01);
+static_assert(sizeof(Menu) == 0x01);
 
 class IFormFactory {
 public:
@@ -3905,7 +3905,7 @@ public:
 	UInt32			loadedModCount;		// 08
 	ModInfo*		loadedMods[0xFF];	// 0C
 };
-assert(sizeof(ModList) == 0x408);
+static_assert(sizeof(ModList) == 0x408);
 
 class MainDataHandler {
 public:
@@ -4077,13 +4077,13 @@ public:
 	ModList								modList;			// 694
 	UInt32								moreunks[100];		// A9C
 };
-assert(sizeof(MainDataHandler) == 0xC2C);
+static_assert(sizeof(MainDataHandler) == 0xC2C);
 
 class SoundControl {
 public:
 	void		Play(TESSound* Sound) {}
 };
-assert(sizeof(SoundControl) == 0x01);
+static_assert(sizeof(SoundControl) == 0x01);
 
 class Main {
 public:
@@ -4143,7 +4143,7 @@ public:
 	void*			cullingProcess2;	// F4 BSGeometryListCullingProcess*
 	UInt32			unkF8[12];			// F8
 };
-assert(sizeof(Main) == 0x128);
+static_assert(sizeof(Main) == 0x128);
 
 class MenuInterfaceManager {
 public:
@@ -4196,7 +4196,7 @@ public:
 	bool					unk_119;						// 119 (= 0)
 	char					pad[2];
 };
-assert(sizeof(MenuInterfaceManager) == 0x11C);
+static_assert(sizeof(MenuInterfaceManager) == 0x11C);
 
 class TimeGlobals {
 public:
@@ -4210,13 +4210,13 @@ public:
 
 	static float GetGameTime() { TimeGlobals* Globals = (TimeGlobals*)0x012E5690; return Globals->GameHour->data * 60.0f * 60.0f; }
 };
-assert(sizeof(TimeGlobals) == 0x1C); // Static class, size could be larger
+static_assert(sizeof(TimeGlobals) == 0x1C); // Static class, size could be larger
 
 class QueuedModelLoader {
 public:
 	UInt32	Unk000[32]; // LockFreeMaps and other
 };
-assert(sizeof(QueuedModelLoader) == 0x80);
+static_assert(sizeof(QueuedModelLoader) == 0x80);
 
 class GameSetting {
 public:
@@ -4228,7 +4228,7 @@ public:
 	};
 	char*		Name;
 };
-assert(sizeof(GameSetting) == 0x0C);
+static_assert(sizeof(GameSetting) == 0x0C);
 
 class VMValue {
 public:
@@ -4269,7 +4269,7 @@ public:
 		BSFixedString	s;
 	} data;			// 04
 };
-assert(sizeof(VMValue) == 0x08);
+static_assert(sizeof(VMValue) == 0x08);
 
 class VMArgList {
 public:
@@ -4288,7 +4288,7 @@ public:
 	UInt32		unk18;		// 18
 	UInt32		numArgs;	// 1C
 };
-assert(sizeof(VMState) == 0x20);
+static_assert(sizeof(VMState) == 0x20);
 
 class VMUnlinkedClassList {
 public:
@@ -4316,7 +4316,7 @@ public:
 	void*				unk40;		// 40
 	UInt32				unk44;		// 44
 };
-assert(sizeof(VMUnlinkedClassList) == 0x48);
+static_assert(sizeof(VMUnlinkedClassList) == 0x48);
 
 class VMClassRegistry {
 public:
@@ -4388,7 +4388,7 @@ public:
 	UInt32				waitingStacks[7];	// 49E4 typedef tHashSet<VMStackTableItem,UInt32> StackTableT;
 	UInt32				unk4A00[65];		// 4A00
 };
-assert(sizeof(VMClassRegistry) == 0x4B04);
+static_assert(sizeof(VMClassRegistry) == 0x4B04);
 
 class NativeFunction {
 public:
@@ -4457,7 +4457,7 @@ public:
 	BSFixedString			unk28;			// 28
 	void*					m_callback;		// 2C
 };
-assert(sizeof(NativeFunction) == 0x30);
+static_assert(sizeof(NativeFunction) == 0x30);
 
 template <typename T1, typename T2, typename T3, typename T4, typename T5>
 class PapyrusFunction5 : public NativeFunction {

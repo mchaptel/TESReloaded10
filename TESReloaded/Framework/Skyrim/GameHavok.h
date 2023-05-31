@@ -16,26 +16,26 @@ public:
 	float	z;
 	float	w;
 };
-assert(sizeof(hkVector4) == 0x010);
+static_assert(sizeof(hkVector4) == 0x010);
 
 class hkQuaternion {
 public:
 	hkVector4	vec;
 };
-assert(sizeof(hkQuaternion) == 0x010);
+static_assert(sizeof(hkQuaternion) == 0x010);
 
 class hkBaseObject {
 public:
 	virtual void Destructor(bool FreeThis);
 };
-assert(sizeof(hkBaseObject) == 0x004);
+static_assert(sizeof(hkBaseObject) == 0x004);
 
 class hkRefObject : public hkBaseObject {
 public:
 	UInt16		sizeAndFlags;	// 04
 	UInt16		refCount;		// 06
 };
-assert(sizeof(hkRefObject) == 0x008);
+static_assert(sizeof(hkRefObject) == 0x008);
 
 class bhkRefObject : public NiObject {
 public:
@@ -44,4 +44,4 @@ public:
 
 	hkRefObject*	hkObject;	// 008
 };
-assert(sizeof(bhkRefObject) == 0x00C);
+static_assert(sizeof(bhkRefObject) == 0x00C);

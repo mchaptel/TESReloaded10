@@ -65,14 +65,14 @@ struct NiRTTI {
 	const char* name;
 	NiRTTI*		parent;
 };
-assert(sizeof(NiRTTI) == 0x008);
+static_assert(sizeof(NiRTTI) == 0x008);
 
 class NiPoint2 {
 public:
 	float	x;
 	float	y;
 };
-assert(sizeof(NiPoint2) == 0x008);
+static_assert(sizeof(NiPoint2) == 0x008);
 
 class NiPoint3 {
 public:
@@ -98,7 +98,7 @@ public:
 		return D3DXVECTOR4(x, y, z, 1.0);
 	}
 };
-assert(sizeof(NiPoint3) == 0x00C);
+static_assert(sizeof(NiPoint3) == 0x00C);
 
 class NiVector4 {
 public:
@@ -121,18 +121,18 @@ public:
 	float z;
 	float w;
 };
-assert(sizeof(NiVector4) == 0x010);
+static_assert(sizeof(NiVector4) == 0x010);
 
 class NiMatrix33 {
 public:
-	NiPoint3 NiMatrix33::operator * (const NiPoint3 pt) const {
+	NiPoint3 operator * (const NiPoint3 pt) const {
 		return {
 			data[0][0] * pt.x + data[0][1] * pt.y + data[0][2] * pt.z,
 			data[1][0] * pt.x + data[1][1] * pt.y + data[1][2] * pt.z,
 			data[2][0] * pt.x + data[2][1] * pt.y + data[2][2] * pt.z
 		};
 	}
-	NiMatrix33 NiMatrix33::operator * (const NiMatrix33 mat) const {
+	NiMatrix33 operator * (const NiMatrix33 mat) const {
 		NiMatrix33 prd;
 
 		prd.data[0][0] =
@@ -192,7 +192,7 @@ public:
 
 	float data[3][3];
 };
-assert(sizeof(NiMatrix33) == 0x024);
+static_assert(sizeof(NiMatrix33) == 0x024);
 
 class NiTransform {
 public:
@@ -200,7 +200,7 @@ public:
 	NiPoint3	pos;		// 24
 	float		scale;		// 30
 };
-assert(sizeof(NiTransform) == 0x034);
+static_assert(sizeof(NiTransform) == 0x034);
 
 class NiPlane {
 public:
@@ -213,7 +213,7 @@ public:
 	NiPoint3	Normal;
 	float		Constant;
 };
-assert(sizeof(NiPlane) == 0x010);
+static_assert(sizeof(NiPlane) == 0x010);
 
 class NiBound {
 public:
@@ -228,7 +228,7 @@ public:
 	NiPoint3	Center;
 	float		Radius;
 };
-assert(sizeof(NiBound) == 0x010);
+static_assert(sizeof(NiBound) == 0x010);
 
 class NiFrustum {
 public:
@@ -241,7 +241,7 @@ public:
 	UInt8	Ortho;		// 18
 	UInt8	pad18[3];
 };
-assert(sizeof(NiFrustum) == 0x01C);
+static_assert(sizeof(NiFrustum) == 0x01C);
 
 class NiFrustumPlanes {
 public:
@@ -258,7 +258,7 @@ public:
 	NiPlane	CullingPlanes[MaxPlanes];	// 00
 	UInt32	ActivePlanes;				// 60
 };
-assert(sizeof(NiFrustumPlanes) == 0x064);
+static_assert(sizeof(NiFrustumPlanes) == 0x064);
 
 class NiViewport {
 public:
@@ -267,7 +267,7 @@ public:
 	float	t;
 	float	b;
 };
-assert(sizeof(NiViewport) == 0x010);
+static_assert(sizeof(NiViewport) == 0x010);
 
 class NiColor {
 public:
@@ -275,7 +275,7 @@ public:
 	float	g;
 	float	b;
 };
-assert(sizeof(NiColor) == 0x00C);
+static_assert(sizeof(NiColor) == 0x00C);
 
 class NiColorAlpha {
 public:
@@ -284,7 +284,7 @@ public:
 	float	b;
 	float	a;
 };
-assert(sizeof(NiColorAlpha) == 0x010);
+static_assert(sizeof(NiColorAlpha) == 0x010);
 
 template <typename T>
 class NiTList {
@@ -303,7 +303,7 @@ public:
 	Entry*	end;		// 008
 	UInt32	numItems;	// 00C
 };
-assert(sizeof(NiTList<void>) == 0x010);
+static_assert(sizeof(NiTList<void>) == 0x010);
 
 template <typename TKey, typename TData>
 class NiTMap {
@@ -327,7 +327,7 @@ public:
 	Entry**			m_buckets;		// 8
 	UInt32			m_numItems;		// C
 };
-assert(sizeof(NiTMap<void, void>) == 0x010);
+static_assert(sizeof(NiTMap<void, void>) == 0x010);
 
 template <typename T>
 class NiTArray {
@@ -342,7 +342,7 @@ public:
 	UInt16		numObjs;		// 0C - init'd to 0
 	UInt16		growSize;		// 0E - init'd to size of preallocation
 };
-assert(sizeof(NiTArray<void>) == 0x010);
+static_assert(sizeof(NiTArray<void>) == 0x010);
 
 template <typename T>
 class NiTLargeArray {
@@ -354,7 +354,7 @@ public:
 	UInt32		numObjs;		// 10 - init'd to 0
 	UInt32		growSize;		// 14 - init'd to size of preallocation
 };
-assert(sizeof(NiTLargeArray<void>) == 0x018);
+static_assert(sizeof(NiTLargeArray<void>) == 0x018);
 
 class NiPixelFormat {
 public:
@@ -437,7 +437,7 @@ public:
 	UInt32			ExtraData;		// 10
 	NiComponentSpec	Components[4];	// 14
 };
-assert(sizeof(NiPixelFormat) == 0x044);
+static_assert(sizeof(NiPixelFormat) == 0x044);
 
 class NiRefObject {
 public:
@@ -445,7 +445,7 @@ public:
 
 	UInt32			m_uiRefCount;				// 004
 };
-assert(sizeof(NiRefObject) == 0x008);
+static_assert(sizeof(NiRefObject) == 0x008);
 
 class NiObject : public NiRefObject {
 public:
@@ -468,7 +468,7 @@ public:
 	virtual void		Unk_11();
 	virtual void		Unk_12(UInt32 arg);
 };
-assert(sizeof(NiObject) == 0x008);
+static_assert(sizeof(NiObject) == 0x008);
 
 class NiExtraData : public NiObject {
 public:
@@ -477,13 +477,13 @@ public:
 
 	char*	m_pcName;	// 08
 };
-assert(sizeof(NiExtraData) == 0x00C);
+static_assert(sizeof(NiExtraData) == 0x00C);
 
 class TESObjectExtraData : public NiExtraData {
 public:
 	TESObjectREFR*	refr;	// 0C
 };
-assert(sizeof(TESObjectExtraData) == 0x010);
+static_assert(sizeof(TESObjectExtraData) == 0x010);
 
 class NiObjectNET : public NiObject {
 public:
@@ -495,7 +495,7 @@ public:
 	UInt16				m_extraDataListLen;				// 014
 	UInt16				m_extraDataListCapacity;		// 016
 };
-assert(sizeof(NiObjectNET) == 0x018);
+static_assert(sizeof(NiObjectNET) == 0x018);
 
 class NiAVObject : public NiObjectNET {
 public:
@@ -550,7 +550,7 @@ public:
 	NiTList<NiProperty>		m_propertyList;			// 098
 	bhkCollisionObject*		m_spCollision;			// 0A8
 };
-assert(sizeof(NiAVObject) == 0x0AC);
+static_assert(sizeof(NiAVObject) == 0x0AC);
 
 class NiNode : public NiAVObject {
 public:
@@ -568,7 +568,7 @@ public:
 	NiTList<NiDynamicEffect*>	m_effects;			// 0BC
 	NiBound						m_combinedBounds;	// 0CC
 };
-assert(sizeof(NiNode) == 0x0DC);
+static_assert(sizeof(NiNode) == 0x0DC);
 
 class NiBillboardNode : public NiNode {
 public:
@@ -588,7 +588,7 @@ public:
 	UInt8	pad0DE[2];			// 0DE
 	float	lastUpdateTime;		// 0E0
 };
-assert(sizeof(NiBillboardNode) == 0x0E4);
+static_assert(sizeof(NiBillboardNode) == 0x0E4);
 
 class NiCamera : public NiAVObject {
 public:
@@ -599,7 +599,7 @@ public:
 	NiViewport	ViewPort;				// 110
 	float		LODAdjust;				// 120
 };
-assert(sizeof(NiCamera) == 0x124);
+static_assert(sizeof(NiCamera) == 0x124);
 
 class NiCullingProcess {
 public:
@@ -615,7 +615,7 @@ public:
 	NiFrustum		CameraFrustum;		// 10
 	NiFrustumPlanes	Planes;				// 2C
 };
-assert(sizeof(NiCullingProcess) == 0x90);
+static_assert(sizeof(NiCullingProcess) == 0x90);
 
 class SceneGraph : public NiNode {
 public:
@@ -629,7 +629,7 @@ public:
 	UInt8				pad0E8[3];
 	float				cameraFOV;				// 0EC
 };
-assert(sizeof(SceneGraph) == 0x0F0);
+static_assert(sizeof(SceneGraph) == 0x0F0);
 
 class NiDynamicEffect : public NiAVObject {
 public:
@@ -646,7 +646,7 @@ public:
 	NiTList<NiNode>		affectedNodes;		// 0BC
 	NiTList<NiNode>		unaffectedNodes;	// 0CC
 };
-assert(sizeof(NiDynamicEffect) == 0x0DC);
+static_assert(sizeof(NiDynamicEffect) == 0x0DC);
 
 class NiLight : public NiDynamicEffect {
 public:
@@ -656,7 +656,7 @@ public:
 	NiColor		Spec;		// 0F8
 	void*		unk104;		// 104
 };
-assert(sizeof(NiLight) == 0x108);
+static_assert(sizeof(NiLight) == 0x108);
 
 class NiPointLight : public NiLight {
 public:
@@ -664,13 +664,13 @@ public:
 	float	Atten1;		// 10C
 	float	Atten2;		// 110
 };
-assert(sizeof(NiPointLight) == 0x114);
+static_assert(sizeof(NiPointLight) == 0x114);
 
 class NiDirectionalLight : public NiLight {
 public:
 	NiPoint3	direction;	// 108
 };
-assert(sizeof(NiDirectionalLight) == 0x114);
+static_assert(sizeof(NiDirectionalLight) == 0x114);
 
 class NiProperty : public NiObjectNET {
 public:
@@ -690,7 +690,7 @@ public:
 	virtual UInt32	GetPropertyType();
 	virtual void	Update(float unk0);
 };
-assert(sizeof(NiProperty) == 0x018);
+static_assert(sizeof(NiProperty) == 0x018);
 
 class NiPropertyState : public NiRefObject {
 public:
@@ -706,7 +706,7 @@ public:
 	//  8 28 WireFrame
 	//  9 2C ZBuffer
 };
-assert(sizeof(NiPropertyState) == 0x030);
+static_assert(sizeof(NiPropertyState) == 0x030);
 
 class NiVBChip {
 public:
@@ -719,7 +719,7 @@ public:
 	NiVBChip*				Next;		// 18
 	NiVBChip*				Prev;		// 1C
 };
-assert(sizeof(NiVBChip) == 0x020);
+static_assert(sizeof(NiVBChip) == 0x020);
 
 class NiGeometryBufferData {
 public:
@@ -745,7 +745,7 @@ public:
 	UInt16*							ArrayLengths;			// 48
 	UInt16*							IndexArray;				// 4C
 };
-assert(sizeof(NiGeometryBufferData) == 0x050);
+static_assert(sizeof(NiGeometryBufferData) == 0x050);
 
 class NiGeometryData : public NiObject {
 public:
@@ -774,7 +774,7 @@ public:
 	UInt8						Unk03D;				// 03D
 	UInt8						pad03C[2];
 };
-assert(sizeof(NiGeometryData) == 0x040);
+static_assert(sizeof(NiGeometryData) == 0x040);
 
 class NiSkinPartition : public NiObject {
 public:
@@ -796,7 +796,7 @@ public:
 	UInt32		PartitionsCount;		// 08
 	Partition*	Partitions;				// 0C
 };
-assert(sizeof(NiSkinPartition) == 0x010);
+static_assert(sizeof(NiSkinPartition) == 0x010);
 
 class NiSkinData : public NiObject {
 public:
@@ -820,7 +820,7 @@ public:
 	UInt32				Bones;				// 40
 	BoneData*			BoneData;			// 44
 };
-assert(sizeof(NiSkinData) == 0x048);
+static_assert(sizeof(NiSkinData) == 0x048);
 
 class NiSkinInstance : public NiObject {
 public:
@@ -836,7 +836,7 @@ public:
 	
 	bool               IsPartitionEnabled(UInt32 partitionIndex) {return true;}
 };
-assert(sizeof(NiSkinInstance) == 0x02C);
+static_assert(sizeof(NiSkinInstance) == 0x02C);
 
 class NiGeometry : public NiAVObject {
 public:
@@ -854,7 +854,7 @@ public:
 	NiSkinInstance*			skinInstance;		// 0B8
 	NiD3DShader*			shader;				// 0BC BSShader
 };
-assert(sizeof(NiGeometry) == 0x0C0);
+static_assert(sizeof(NiGeometry) == 0x0C0);
 
 class NiDX9TextureData {
 public:
@@ -867,7 +867,7 @@ public:
 	UInt32					Height;			// 58
 	UInt32					Levels;			// 5C
 };
-assert(sizeof(NiDX9TextureData) == 0x060);
+static_assert(sizeof(NiDX9TextureData) == 0x060);
 
 class NiDX9SourceTextureData : public NiDX9TextureData {
 public:
@@ -881,7 +881,7 @@ public:
 	UInt32					SourceRevID;		// 74
 	UInt32					PalRevID;			// 78
 };
-assert(sizeof(NiDX9SourceTextureData) == 0x07C);
+static_assert(sizeof(NiDX9SourceTextureData) == 0x07C);
 
 class NiTexture : public NiObjectNET {
 public:
@@ -931,7 +931,7 @@ public:
 	NiTexture*			texPrev;		// 028
 	NiTexture*			texNext;		// 02C
 };
-assert(sizeof(NiTexture) == 0x030);
+static_assert(sizeof(NiTexture) == 0x030);
 
 class NiSourceTexture : public NiTexture {
 public:
@@ -949,7 +949,7 @@ public:
 	UInt8			pad042[2];			// 042
 	void*			unk044;				// 044
 };
-assert(sizeof(NiSourceTexture) == 0x048);
+static_assert(sizeof(NiSourceTexture) == 0x048);
 
 class NiRenderedTexture : public NiTexture {
 public:
@@ -962,7 +962,7 @@ public:
 	UInt8		unk03C;		// 03C
 	UInt8		pad03C;
 };
-assert(sizeof(NiRenderedTexture) == 0x040);
+static_assert(sizeof(NiRenderedTexture) == 0x040);
 
 class NiD3DTextureStage {
 public:
@@ -970,7 +970,7 @@ public:
 	NiTexture*			Texture;			// 04
 	UInt32				Unk08;				// 08
 };
-assert(sizeof(NiD3DTextureStage) == 0x00C);
+static_assert(sizeof(NiD3DTextureStage) == 0x00C);
 
 class NiD3DShaderConstantMapEntry {
 public:
@@ -990,7 +990,7 @@ public:
 	UInt8				Unk34;				// 34
 	UInt8				pad34[3];
 };
-assert(sizeof(NiD3DShaderConstantMapEntry) == 0x038);
+static_assert(sizeof(NiD3DShaderConstantMapEntry) == 0x038);
 
 class NiD3DShaderConstantMap {
 public:
@@ -1007,7 +1007,7 @@ public:
 	NiDX9RenderState*						RenderState;		// 30
 
 };
-assert(sizeof(NiD3DShaderConstantMap) == 0x034);
+static_assert(sizeof(NiD3DShaderConstantMap) == 0x034);
 
 class NiD3DShaderDeclaration : public NiObject {
 public:
@@ -1021,7 +1021,7 @@ public:
 	UInt32						Unk024;			// 024
 	UInt32						Unk028;			// 028
 };
-assert(sizeof(NiD3DShaderDeclaration) == 0x02C);
+static_assert(sizeof(NiD3DShaderDeclaration) == 0x02C);
 
 class NiDX9ShaderDeclaration : public NiD3DShaderDeclaration {
 public:
@@ -1029,7 +1029,7 @@ public:
 	UInt32		Unk030;			// 030
 	UInt32		Unk034;			// 034
 };
-assert(sizeof(NiDX9ShaderDeclaration) == 0x038);
+static_assert(sizeof(NiDX9ShaderDeclaration) == 0x038);
 
 class NiD3DShaderProgram : public NiRefObject {
 public:
@@ -1049,7 +1049,7 @@ public:
 	NiDX9Renderer*			Renderer;			// 20
 	NiDX9RenderState*		RenderState;		// 24
 };
-assert(sizeof(NiD3DShaderProgram) == 0x028);
+static_assert(sizeof(NiD3DShaderProgram) == 0x028);
 
 class NiD3DVertexShader : public NiD3DShaderProgram {
 public:
@@ -1059,13 +1059,13 @@ public:
 	IDirect3DVertexShader9*			ShaderHandle;	// 30
 	IDirect3DVertexDeclaration9*	Declaration;	// 34
 };
-assert(sizeof(NiD3DVertexShader) == 0x038);
+static_assert(sizeof(NiD3DVertexShader) == 0x038);
 
 class NiD3DPixelShader : public NiD3DShaderProgram {
 public:
 	IDirect3DPixelShader9*			ShaderHandle;	// 28
 };
-assert(sizeof(NiD3DPixelShader) == 0x02C);
+static_assert(sizeof(NiD3DPixelShader) == 0x02C);
 
 class NiD3DPass {
 public:
@@ -1091,14 +1091,14 @@ public:
 	UInt8							pad[2];
 	UInt32							RefCount;					// 60
 };
-assert(sizeof(NiD3DPass) == 0x064);
+static_assert(sizeof(NiD3DPass) == 0x064);
 
 class NiShader : public NiRefObject {
 public:
 	char*		Name;					// 008
 	UInt32		Unk00C;					// 00C
 };
-assert(sizeof(NiShader) == 0x010);
+static_assert(sizeof(NiShader) == 0x010);
 
 class NiD3DShaderInterface : public NiShader {
 public:
@@ -1109,7 +1109,7 @@ public:
 	UInt8				Unk01D;			// 01D
 	UInt8				pad[2];
 };
-assert(sizeof(NiD3DShaderInterface) == 0x020);
+static_assert(sizeof(NiD3DShaderInterface) == 0x020);
 
 class NiD3DShader : public NiD3DShaderInterface {
 public:
@@ -1126,7 +1126,7 @@ public:
 	NiTArray<NiD3DPass*>	Passes;				// 040
 	UInt32					Unk050[8];			// 050
 };
-assert(sizeof(NiD3DShader) == 0x70);
+static_assert(sizeof(NiD3DShader) == 0x70);
 
 class BSShader : public NiD3DShader {
 public:
@@ -1134,7 +1134,7 @@ public:
 	UInt32		Unk074;			// 074
 	UInt32		Unk078;			// 078
 };
-assert(sizeof(BSShader) == 0x7C);
+static_assert(sizeof(BSShader) == 0x7C);
 
 class GeometryDecalShader : public BSShader {
 public:
@@ -1143,7 +1143,7 @@ public:
 	NiD3DPixelShader*	Pixel[2];		// 08C
 	UInt32				Unk104[3];		// 094
 };
-assert(sizeof(GeometryDecalShader) == 0x0A0);
+static_assert(sizeof(GeometryDecalShader) == 0x0A0);
 
 class WaterShader : public BSShader {
 public:
@@ -1152,7 +1152,7 @@ public:
 	NiD3DPixelShader*	Pixel[16];		// 0C4
 	UInt32				Unk104[5];		// 104
 };
-assert(sizeof(WaterShader) == 0x118);
+static_assert(sizeof(WaterShader) == 0x118);
 
 class TallGrassShader : public BSShader {
 public:
@@ -1167,7 +1167,7 @@ public:
 	UInt16				pad160;				// 162
 	UInt32				Unk164[12];			// 164
 };
-assert(sizeof(TallGrassShader) == 0x194);
+static_assert(sizeof(TallGrassShader) == 0x194);
 
 class BSImageSpaceShader : public BSShader {
 public:
@@ -1177,7 +1177,7 @@ public:
 	UInt32		Unk088;		// 088
 	UInt32		Unk08C;		// 08C
 };
-assert(sizeof(BSImageSpaceShader) == 0x90);
+static_assert(sizeof(BSImageSpaceShader) == 0x90);
 
 class WaterShaderDisplacement : public BSImageSpaceShader {
 public:
@@ -1186,7 +1186,7 @@ public:
 	NiD3DPixelShader*	Pixel[8];		// 0D4
 	UInt32				Unk0F4[13];		// 0F4
 };
-assert(sizeof(WaterShaderDisplacement) == 0x128);
+static_assert(sizeof(WaterShaderDisplacement) == 0x128);
 
 class WaterShaderHeightMap : public BSImageSpaceShader {
 public:
@@ -1216,7 +1216,7 @@ public:
 	UInt32				Unk104;				// 104
 	UInt32				Unk108;				// 108
 };
-assert(sizeof(WaterShaderHeightMap) == 0x10C);
+static_assert(sizeof(WaterShaderHeightMap) == 0x10C);
 
 class HDRShader : public BSImageSpaceShader {
 public:
@@ -1226,7 +1226,7 @@ public:
 	UInt32				Unk0D4[13];		// 0D4
 	UInt32				Unk108[7];		// 108
 };
-assert(sizeof(HDRShader) == 0x124);
+static_assert(sizeof(HDRShader) == 0x124);
 
 class SpeedTreeLeafShader : public BSShader {
 public:
@@ -1235,7 +1235,7 @@ public:
 	NiD3DPixelShader*	Pixel[2];		// 38C
 	UInt32				Unk394;			// 394
 };
-assert(sizeof(SpeedTreeLeafShader) == 0x398);
+static_assert(sizeof(SpeedTreeLeafShader) == 0x398);
 
 class ShadowLightShader : public BSShader {
 public:
@@ -1248,21 +1248,21 @@ public:
 	NiD3DShaderConstantMap* PixelConstantMapSLS2;	// 094
 	NiD3DShaderConstantMap* VertexConstantMapSLS2;	// 098
 };
-assert(sizeof(ShadowLightShader) == 0x09C);
+static_assert(sizeof(ShadowLightShader) == 0x09C);
 
 class ParallaxShader : public ShadowLightShader {
 public:
 	NiD3DVertexShader*	Vertex[36];		// 09C
 	NiD3DPixelShader*	Pixel[30];		// 12C
 };
-assert(sizeof(ParallaxShader) == 0x1A4);
+static_assert(sizeof(ParallaxShader) == 0x1A4);
 
 class SkinShader : public ShadowLightShader {
 public:
 	NiD3DVertexShader*	Vertex[20];		// 09C
 	NiD3DPixelShader*	Pixel[10];		// 0EC
 };
-assert(sizeof(SkinShader) == 0x114);
+static_assert(sizeof(SkinShader) == 0x114);
 
 
 class NightEyeShader : public BSImageSpaceShader {
@@ -1271,14 +1271,14 @@ public:
 	NiD3DPixelShader*	Pixel[1];		// 094
 	//Incomplete def.
 };
-assert(sizeof(NightEyeShader) == 0x098); //Not the real size
+static_assert(sizeof(NightEyeShader) == 0x098); //Not the real size
 
 class ShaderDefinition {
 public:
 	NiDX9ShaderDeclaration* ShaderDeclaration;
 	BSShader*				Shader;
 };
-assert(sizeof(ShaderDefinition) == 0x008);
+static_assert(sizeof(ShaderDefinition) == 0x008);
 
 class Ni2DBuffer : public NiObject {
 public:
@@ -1286,10 +1286,10 @@ public:
 	UInt32				height;	// 00C
 	NiDX92DBufferData*	data;	// 010
 };
-assert(sizeof(Ni2DBuffer) == 0x014);
+static_assert(sizeof(Ni2DBuffer) == 0x014);
 
 class NiDepthStencilBuffer : public Ni2DBuffer {};
-assert(sizeof(NiDepthStencilBuffer) == 0x014);
+static_assert(sizeof(NiDepthStencilBuffer) == 0x014);
 
 class NiDX92DBufferData : public NiRefObject {
 public:
@@ -1312,7 +1312,7 @@ public:
 	Ni2DBuffer*			ParentData;												// 08
 	IDirect3DSurface9*	Surface;												// 0C
 };
-assert(sizeof(NiDX92DBufferData) == 0x010);
+static_assert(sizeof(NiDX92DBufferData) == 0x010);
 
 class NiDX9ImplicitBufferData : public NiDX92DBufferData {
 public:
@@ -1320,13 +1320,13 @@ public:
 	D3DPRESENT_PARAMETERS	PresentParams;								// 14
 	IDirect3DDevice9*		Device;										// 4C
 };
-assert(sizeof(NiDX9ImplicitBufferData) == 0x050);
+static_assert(sizeof(NiDX9ImplicitBufferData) == 0x050);
 
 class NiDX9ImplicitDepthStencilBufferData : public NiDX92DBufferData { };
-assert(sizeof(NiDX9ImplicitDepthStencilBufferData) == 0x010);
+static_assert(sizeof(NiDX9ImplicitDepthStencilBufferData) == 0x010);
 
 class NiDX9TextureBufferData : public NiDX92DBufferData { };
-assert(sizeof(NiDX9TextureBufferData) == 0x010);
+static_assert(sizeof(NiDX9TextureBufferData) == 0x010);
 
 class NiRenderTargetGroup : public NiObject {
 public:
@@ -1351,7 +1351,7 @@ public:
 	NiDepthStencilBuffer*			DepthStencilBuffer;			// 1C
 	void*							RenderData;					// 20
 };
-assert(sizeof(NiRenderTargetGroup) == 0x024);
+static_assert(sizeof(NiRenderTargetGroup) == 0x024);
 
 class NiGeometryGroup {
 public:
@@ -1369,7 +1369,7 @@ public:
 	UInt32				m_uiRefCount;	// 04
 	IDirect3DDevice9*	device;			// 08
 };
-assert(sizeof(NiGeometryGroup) == 0x00C);
+static_assert(sizeof(NiGeometryGroup) == 0x00C);
 
 class NiDX9RenderState : public NiRefObject {
 public:
@@ -1471,8 +1471,8 @@ public:
 	UInt32							unk1000[(0x1018 - 0x1000) >> 2];// 1000
 	D3DCAPS9						Caps;							// 1018
 };
-assert(offsetof(NiDX9RenderState, Device) == 0x0FF8);
-assert(sizeof(NiDX9RenderState) == 0x1148);
+static_assert(offsetof(NiDX9RenderState, Device) == 0x0FF8);
+static_assert(sizeof(NiDX9RenderState) == 0x1148);
 
 class NiAccumulator : public NiObject {
 public:
@@ -1483,7 +1483,7 @@ public:
 
 	NiCamera*		camera;	// 08
 };
-assert(sizeof(NiAccumulator) == 0x00C);
+static_assert(sizeof(NiAccumulator) == 0x00C);
 
 class NiRenderer : public NiObject {
 public:
@@ -1599,7 +1599,7 @@ public:
 	UInt8					unk20D;							// 20D
 	UInt8					pad20E[2];						// 20E
 };
-assert(sizeof(NiRenderer) == 0x210);
+static_assert(sizeof(NiRenderer) == 0x210);
 
 class NiDX9Renderer : public NiRenderer {
 public:
@@ -1825,7 +1825,7 @@ public:
 	NiTArray<void*>						lostDeviceCallbacksRefcons;		// AC8
 	UInt32								padAD0[(0xB00 - 0xAD8) >> 2];	// AD8
 };
-assert(sizeof(NiDX9Renderer) == 0xB00);
+static_assert(sizeof(NiDX9Renderer) == 0xB00);
 
 class NiControllerSequence : public NiObject {
 public:
@@ -1888,10 +1888,10 @@ public:
 	NiAVObject*			 accumRoot;		// 060
 	NiStringPalette*	 unk064;		// 064
 };
-assert(sizeof(NiControllerSequence) == 0x068);
+static_assert(sizeof(NiControllerSequence) == 0x068);
 
 class NiAVObjectPalette : public NiObject { };
-assert(sizeof(NiAVObjectPalette) == 0x008);
+static_assert(sizeof(NiAVObjectPalette) == 0x008);
 
 class NiDefaultAVObjectPalette : public NiAVObjectPalette {
 public:
@@ -1899,7 +1899,7 @@ public:
 	UInt32						unk018;			// 018
 	NiNode*						niNode;			// 01C
 };
-assert(sizeof(NiDefaultAVObjectPalette) == 0x020);
+static_assert(sizeof(NiDefaultAVObjectPalette) == 0x020);
 
 class BSFadeNode : public NiNode {
 public:
@@ -1911,7 +1911,7 @@ public:
 	UInt8	MultType;		// 0EC
 	UInt8	unk0ED[3];		// 0ED
 };
-assert(sizeof(BSFadeNode) == 0x0F0);
+static_assert(sizeof(BSFadeNode) == 0x0F0);
 
 class BSRenderedTexture : public NiRefObject {
 public:
@@ -1919,7 +1919,7 @@ public:
 	UInt32				 unk008[5];			// 00C
 	NiRenderedTexture*	 RenderedTexture;	// 020
 };
-assert(sizeof(BSRenderedTexture) == 0x024);
+static_assert(sizeof(BSRenderedTexture) == 0x024);
 
 class NiAlphaProperty : public NiProperty {
 public:
@@ -1939,7 +1939,7 @@ public:
 	UInt8	alphaTestRef;	// 01A
 	UInt8	unk01B;			// 01B
 };
-assert(sizeof(NiAlphaProperty) == 0x01C);
+static_assert(sizeof(NiAlphaProperty) == 0x01C);
 
 class NiShadeProperty : public NiProperty {
 public:
@@ -1948,7 +1948,7 @@ public:
 	UInt16	flags;		// 018
 	UInt8	pad01A[2];	// 01A
 };
-assert(sizeof(NiShadeProperty) == 0x01C);
+static_assert(sizeof(NiShadeProperty) == 0x01C);
 
 class BSShaderProperty : public NiShadeProperty {
 public:
@@ -2029,7 +2029,7 @@ public:
 	NiTList<RenderPass>	unk58;					// 058
 	UInt32				unk068;					// 068
 };
-assert(sizeof(BSShaderProperty) == 0x06C);
+static_assert(sizeof(BSShaderProperty) == 0x06C);
 
 class BSShaderLightingProperty : public BSShaderProperty {
 public:
@@ -2040,7 +2040,7 @@ public:
 	float						unk094;		// 094
 	UInt32						refID;		// 098
 };
-assert(sizeof(BSShaderLightingProperty) == 0x09C);
+static_assert(sizeof(BSShaderLightingProperty) == 0x09C);
 
 class BSShaderPPLightingProperty : public BSShaderLightingProperty {
 public:
@@ -2095,7 +2095,7 @@ public:
 	float			refractionPower;		// 0E8
 	UInt32			refractionPeriod;		// 0EC
 };
-assert(sizeof(BSShaderPPLightingProperty) == 0x0F0);
+static_assert(sizeof(BSShaderPPLightingProperty) == 0x0F0);
 
 class SpeedTreeShaderLightingProperty : public BSShaderLightingProperty {
 public:
@@ -2121,7 +2121,7 @@ public:
 	UInt32		unk0A0;	// 0A0
 	Str0A4*		unk0A4;	// 0A4
 };
-assert(sizeof(SpeedTreeShaderLightingProperty) == 0x0A8);
+static_assert(sizeof(SpeedTreeShaderLightingProperty) == 0x0A8);
 
 class SpeedTreeLeafShaderProperty : public SpeedTreeShaderLightingProperty {
 public:
@@ -2142,7 +2142,7 @@ public:
 	UInt16		unk0AC;		// 0AC
 	UInt8		unk0AE[2];	// 0AE
 };
-assert(sizeof(SpeedTreeLeafShaderProperty) == 0x0B0);
+static_assert(sizeof(SpeedTreeLeafShaderProperty) == 0x0B0);
 
 class BSTreeModel : public NiRefObject {
 public:
@@ -2167,7 +2167,7 @@ public:
 	UInt32					Unk50;				// 50
 	UInt32					Unk54;				// 54
 };
-assert(sizeof(BSTreeModel) == 0x058);
+static_assert(sizeof(BSTreeModel) == 0x058);
 
 class BSTreeNode : public NiNode {
 public:
@@ -2177,7 +2177,7 @@ public:
 	UInt32				UnkE8;			// E8
 	float				UnkEC;			// EC
 };
-assert(sizeof(BSTreeNode) == 0x0F0);
+static_assert(sizeof(BSTreeNode) == 0x0F0);
 
 class ShadowSceneLight : public NiRefObject {
 public:
@@ -2222,7 +2222,7 @@ public:
 	UInt32										unk218;				// 218
 	UInt32										unk21C;				// 21C
 };
-assert(sizeof(ShadowSceneLight) == 0x220);
+static_assert(sizeof(ShadowSceneLight) == 0x220);
 
 class ShadowSceneNode : public NiNode {
 public:
@@ -2245,4 +2245,4 @@ public:
 	UInt8								unk12C;				// 12C
 	UInt8								pad12D[3];			// 12D
 };
-assert(sizeof(ShadowSceneNode) == 0x130);
+static_assert(sizeof(ShadowSceneNode) == 0x130);

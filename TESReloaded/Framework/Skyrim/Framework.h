@@ -2,7 +2,6 @@
 #pragma warning (disable: 4244) //disable warning for possible loss of data in implicit cast between int, float and double
 
 #define DETOURS_INTERNAL
-#define assert(a) static_assert(a, "Assertion failed")
 #define DIRECTINPUT_VERSION 0x0800
 
 #include <windows.h>
