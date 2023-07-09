@@ -1309,7 +1309,7 @@ public:
 	void*					imageSpaceMods[6];			// 01C TESImageSpaceModifier*
 	TESTexture				textureLayers[4];			// 034
 	UInt8					cloudSpeed[4];				// 064
-	UInt32					unk068[24];					// 068
+	UInt32					cloudColor[4][6];			// 068
 	TESModel				model;						// 0C8
 	UInt8					windSpeed;					// 0E0
 	UInt8					cloudSpeedLower;			// 0E1
@@ -1323,7 +1323,7 @@ public:
 	UInt8					lightningEndFadeOut;		// 0E9
 	UInt8					lightningFrequency;			// 0EA
 	UInt8					weatherType;				// 0EB
-	UInt32					lightningColor;				// 0EC
+	DWORD					lightningColor;				// 0EC color in hex
 	FogInfo					fogDay;						// 0F0
 	FogInfo					fogNight;					// 0FC
 	ColorData				colors[10];					// 108
@@ -1596,6 +1596,7 @@ public:
 	void*					encounterZone;		// 0D0 confirmed BGSEncounterZone*
 	TESTexture				canopyShadow;		// 0D4 confirmed NNAM
 	TESTexture				waterNoiseTexture;	// 0E0 confirmed XNAM
+
 };
 assert(sizeof(TESWorldSpace) == 0xEC);
 
@@ -2174,7 +2175,12 @@ public:
 		RGBA		fog;
 		float		fogNear;
 		float		fogFar;
-		// it continues....
+		int			directionalRotXY;
+		int			directionalRotZ;
+		float		directionalFade;
+		float		fogClipDist;
+		float		fogPower;
+		UINT*		getValuesFrom;
 	};
 	
 	struct StructC4 {
@@ -3942,7 +3948,7 @@ public:
 	NiTriShape*			 SunGlareGeometry;	// 14
 	NiTArray<NiPick*>*	 SunPickList;		// 18
 	NiDirectionalLight*  SunDirLight;		// 1C Same as g_TES->directionalLight
-	float				 flt20;				// 20
+	float				 glareScale;		// 20
 	UInt8				 byte24;			// 24
 	UInt8				 byte25;			// 25
 	UInt8			     byte26;			// 26
@@ -3964,6 +3970,30 @@ public:
 
 };
 assert(sizeof(Atmosphere) == 0x01C);
+
+class NiFogProperty : public NiProperty
+{
+public:
+	unsigned __int16 m_flags;
+	float m_fDepth;
+	NiColor m_kColor;
+};
+
+class BSFogProperty : public NiFogProperty
+{
+public:
+	float fStartDistance;
+	float fEndDistance;
+	float fStartWaterDistance;
+	float fEndWaterDistance;
+	NiPlane kPlane;
+	float fFalloff;
+	float fHeight;
+	NiColor kWaterColor;
+	float fPower;
+};
+assert(sizeof(BSFogProperty) == 0x64);
+
 
 class Stars : public SkyObject {	
 public:
@@ -4098,21 +4128,25 @@ public:
 	Moon*			masserMoon;			// 030
 	Moon*			secundaMoon;		// 034
 	Precipitation*	precipitation;		// 038
-	NiPoint3		vector03C;			// 03C
-	NiColor			waterReflection;	// 048
-	NiPoint3		vector054;			// 054
+	NiColor			skyUpper;			// 03C
+	NiColor			fogColor;			// 048
+	NiColor			CloudsLower;		// 054
 	NiColor			sunAmbient;			// 060
 	NiColor			sunDirectional;		// 06C
-	NiPoint3		vector078;			// 078
-	NiPoint3		vector084;			// 084
-	NiPoint3		vector090;			// 090
-	NiPoint3		vector09C;			// 09C	virtual void	Refresh(NiNode* niNode, const char* moonStr);
-	NiPoint3		vector0A8;			// 0A8
-	NiPoint3		vector0B4;			// 0B4
+	NiColor			SunColor;			// 078
+	NiColor			Stars;				// 084
+	NiColor			SkyLower;			// 090
+	NiColor			Horizon;			// 09C	virtual void	Refresh(NiNode* niNode, const char* moonStr);
+	NiColor			CloudsUpper;		// 0A8
+	NiColor			Lighting;			// 0B4
 	NiColor			sunFog;				// 0C0
 	float			windSpeed;			// 0CC
 	float			windDirection;		// 0D0
-	UInt32			unk0D4[5];			// 0D4
+	float			fogNearPlane;		// 0D4
+	float			fogFarPlane;		// 0D8
+	UInt32			unk0DC;				// 0DC
+	UInt32			unk0E0;				// 0E0
+	UInt32			unk0E4;				// 0E4
 	float			fogPower;			// 0E8
 	float			gameHour;			// 0EC
 	float			lastUpdateHour;		// 0F0
@@ -4217,7 +4251,7 @@ struct WaterGroup
 
 class WaterManager {
 public:
-	UInt32				unk00;					// 000
+	UInt32 numWaterGroups;					// 000
 	UInt32				unk04;					// 004
 	UInt32				unk08;					// 008
 	UInt32				unk0C;					// 00C
@@ -4233,7 +4267,7 @@ public:
 	UInt8				unk34;					// 034
 	UInt8				pad34[3];
 	float				unk38;					// 038
-	DList<WaterGroup>	unk3C;					// 03C
+	DList<WaterGroup>	waterGroups;			// 03C
 	WaterGroup			*waterLOD; 				// 048
 	NiTMap<TESObjectREFR*, TESObjectREFR*>		unkReflectionExplosion;	// 04C Seems to be used only under a bReflectExplosions = 1 condition
 	NiTMap<TESObjectREFR*, TESObjectREFR*>		unk5C;	// 05C
@@ -4253,7 +4287,7 @@ public:
 	virtual void		Fn_00(UInt32 arg1, UInt32 arg2, UInt32 arg3, UInt32 arg4, UInt32 arg5);
 	
 	void				PurgeCells() {}
-	float				GetWaterHeight(TESObjectREFR* Ref) {
+	float				GetWaterHeight(TESObjectREFR* Ref, SceneGraph* WorldSceneGraph) {
 //							Logger::Log("Get Water Height");
 							TESObjectCELL* Cell = Ref->parentCell;
 							float r = worldSpace->defaultWaterHeight;
@@ -4269,7 +4303,61 @@ public:
 								}
 							}
 //							Logger::Log("default %f", r);
-							return r;
+							float height = r; // default value uses the cell default waterheight
+
+							DList<WaterGroup> watergroups = waterManager->waterGroups;
+							DNode<WaterGroup>* water = watergroups.first;
+							D3DXVECTOR4 playerPosition, waterPosition;
+
+							playerPosition.x = Ref->pos.x;
+							playerPosition.y = Ref->pos.y;
+							playerPosition.z = Ref->pos.z;
+							playerPosition.w = 1.0;
+
+							NiCamera* Camera = WorldSceneGraph->camera;
+							D3DXVECTOR4 CameraForward;
+							if (Camera) {
+								NiMatrix33* WorldRotate = &Camera->m_worldTransform.rot;
+								CameraForward.x = WorldRotate->data[0][0];
+								CameraForward.y = WorldRotate->data[1][0];
+								CameraForward.z = WorldRotate->data[2][0];
+								CameraForward.w = 1.0;
+							}
+
+							float distance = 1000000;
+							float inFront = -1;
+
+							// look at all water planes in nearby scene
+							for (UInt32 i = 0; i < watergroups.count; i++) {
+								DList<TESObjectREFR> waterplanes = water->data->waterPlanes;
+								DNode<TESObjectREFR>* plane = waterplanes.first;
+
+								for (UInt32 j = 0; j < waterplanes.count; j++) {
+									NiNode* node = plane->data->GetNode();
+									NiBound* bounds = node->GetWorldBound();
+
+									waterPosition.x = bounds->Center.x;
+									waterPosition.y = bounds->Center.y;
+									waterPosition.z = bounds->Center.z;
+									waterPosition.x = 1.0f;
+
+									float waterDistance = node->GetDistance(&Ref->pos) - bounds->Radius;
+									D3DXVECTOR4 waterVector = waterPosition - playerPosition;
+									D3DXVec4Normalize(&waterVector, &waterVector);
+									float waterInFront = D3DXVec4Dot(&waterVector, &CameraForward);
+
+									// select water that is the closest and the most in front
+									if (waterDistance < 0 || (waterInFront > inFront && waterDistance < distance)) {
+										distance = waterDistance;
+										inFront = waterInFront;
+										height = bounds->Center.z;
+									}
+									plane = plane->next;
+								}
+								water = water->next;
+							}
+
+							return height;
 						}
 	TESWaterForm*		GetWaterForm() { return currentCell ? currentCell->GetWaterForm() : NULL; }
 
@@ -5201,8 +5289,10 @@ public:
 	NiTArray<void>			array454;			// 454 NiTPrimitiveArray@TextureType@BSTextureManager
 	NiTArray<void>			array464;			// 464 NiTPrimitiveArray@FilterMode@NiTexturingProperty
 	UInt32					unk474[18];			// 474
-	UInt32					unk4BC;				// 4BC
+	UInt32					pipBoyMode;			// 4BC
 	UInt32					unk4C0[48];			// 4C0
+
+	UInt8					getIsMenuOpen() { return pipBoyMode == 3; };
 };
 assert(sizeof(MenuInterfaceManager) == 0x580);
 
@@ -5238,6 +5328,21 @@ public:
 };
 assert(sizeof(GameSetting) == 0x0C);
 
+struct MuzzleFlash
+{
+	bool bEnabled;
+	bool bMPSEnabled;
+	bool bUpdateLight;
+	bool gap03;
+	float fEnableTimer;
+	float fDurationTimer;
+	NiNode* node;
+	NiPointLight* light;
+	BGSProjectile* projectile;
+	TESObjectWEAP* sourceWeap;
+	Actor* sourceActor;
+};
+
 namespace Pointers {
 	namespace Generic {
 		static float*			  MPF					= (float*)0x00000000;
@@ -5270,16 +5375,16 @@ namespace Pointers {
 
 	}
 	namespace Settings {
-		static UInt32* MinGrassSize				= (UInt32*)0x00000000;
-		static float*  GrassStartFadeDistance	= (float*)0x00000000;
-		static float*  GrassEndDistance			= (float*)0x00000000;
-		static float*  GrassWindMagnitudeMin	= (float*)0x00000000;
-		static float*  GrassWindMagnitudeMax	= (float*)0x00000000;
-		static float*  TexturePctThreshold		= (float*)0x00000000;
+		static UInt32* MinGrassSize				= (UInt32*)0x011CA528;
+		static float*  GrassStartFadeDistance	= (float*)0x011CA454;
+		static float*  GrassEndDistance			= (float*)0x011CA49C; // grassFadeRange in NV
+		static float*  GrassWindMagnitudeMin	= (float*)0x01200500;
+		static float*  GrassWindMagnitudeMax	= (float*)0x01200504;
+		static float*  TexturePctThreshold		= (float*)0x011C9F3C;
 	}
 	namespace ShaderParams {
-		static float* GrassWindMagnitudeMax	= (float*)0x00000000;
-		static float* GrassWindMagnitudeMin	= (float*)0x00000000;
+		static float* GrassWindMagnitudeMax	= (float*)0x01200500;
+		static float* GrassWindMagnitudeMin	= (float*)0x01200500;
 		static UInt8* WaterHighResolution	= (UInt8*)0x01200059;
 		static float* RockParams			= (float*)0x01200658;
 		static float* RustleParams			= (float*)0x01200668;

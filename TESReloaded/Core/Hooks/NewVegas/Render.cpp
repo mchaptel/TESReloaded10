@@ -7,7 +7,7 @@ void __fastcall RenderHook(Main* This, UInt32 edx, BSRenderedTexture* RenderedTe
 
 	TheFrameRateManager->UpdatePerformance();
 	TheCameraManager->SetSceneGraph();
-	TheShaderManager->UpdateConstants();
+	//TheShaderManager->UpdateConstants();
 //	if (SettingsMain->Develop.TraceShaders && InterfaceManager->IsActive(Menu::MenuType::kMenuType_None) && Global->OnKeyDown(SettingsMain->Develop.TraceShaders) && DWNode::Get() == NULL) DWNode::Create();
 	(*Render)(This, RenderedTexture, Arg2, Arg3);
 
@@ -22,9 +22,16 @@ void __fastcall SetShadersHook(BSShader* This, UInt32 edx, UInt32 PassIndex) {
 	NiD3DPixelShaderEx* PixelShader = (NiD3DPixelShaderEx*)Pass->PixelShader;
 
 	if (VertexShader && PixelShader) {
-		VertexShader->SetupShader(TheRenderManager->renderState->GetVertexShader());
-		PixelShader->SetupShader(TheRenderManager->renderState->GetPixelShader());
-		if (TheSettingManager->SettingsMain.Develop.DebugMode && Global->OnKeyDown(0x17)) {
+		try {
+			VertexShader->SetupShader(TheRenderManager->renderState->GetVertexShader());
+			PixelShader->SetupShader(TheRenderManager->renderState->GetPixelShader());
+		}
+		catch (std::exception e) {
+			Logger::Log("Error during shader setup for pass %s: %s", Pointers::Functions::GetPassDescription(PassIndex), e.what());
+		}
+
+		// trace pipeline active shaders
+		if (TheSettingManager->SettingsMain.Develop.DebugMode && !InterfaceManager->IsActive(Menu::MenuType::kMenuType_Console) && Global->OnKeyDown(0x17)) {
 			char Name[256];
 			sprintf(Name, "Pass %i %s, %s (%s %s)", PassIndex, Pointers::Functions::GetPassDescription(PassIndex), Geometry->m_pcName, VertexShader->ShaderName, PixelShader->ShaderName);
 			if (VertexShader->ShaderHandle == VertexShader->ShaderHandleBackup) strcat(Name, " - Vertex: vanilla");
@@ -75,11 +82,11 @@ void __fastcall RenderReflectionsHook(WaterManager* This, UInt32 edx, NiCamera* 
 	D3DXVECTOR4* ShadowData = &TheShaderManager->ShaderConst.Shadow.Data;
 	float ShadowDataBackup = ShadowData->x;
 
-	if (DWNode::Get()) DWNode::AddNode("BEGIN REFLECTIONS RENDERING", NULL, NULL);
-	ShadowData->x = -1.0f; // Disables the shadows rendering for water reflections (the geo is rendered with the same shaders used in the normal scene!)
-	(*RenderReflections)(This, Camera, SceneNode);
-	ShadowData->x = ShadowDataBackup;
-	if (DWNode::Get()) DWNode::AddNode("END REFLECTIONS RENDERING", NULL, NULL);
+		if (DWNode::Get()) DWNode::AddNode("BEGIN REFLECTIONS RENDERING", NULL, NULL);
+		ShadowData->x = -1.0f; // Disables the shadows rendering for water reflections (the geo is rendered with the same shaders used in the normal scene!)
+		(*RenderReflections)(This, Camera, SceneNode);
+		ShadowData->x = ShadowDataBackup;
+		if (DWNode::Get()) DWNode::AddNode("END REFLECTIONS RENDERING", NULL, NULL);
 }
 
 void (__thiscall* RenderPipboy)(Main*, NiGeometry*, NiDX9Renderer*) = (void (__thiscall*)(Main*, NiGeometry*, NiDX9Renderer*))Hooks::RenderPipboy;
@@ -87,15 +94,15 @@ void __fastcall RenderPipboyHook(Main* This, UInt32 edx, NiGeometry* Geo, NiDX9R
 	WorldSceneGraph->UpdateParticleShaderFoV(Player->firstPersonFoV);
 //	Player->SetFoV(Player->firstPersonFoV);
 	(*RenderPipboy)(This, Geo, Renderer);
-
 }
 
 float (__thiscall* GetWaterHeightLOD)(TESWorldSpace*) = (float (__thiscall*)(TESWorldSpace*))Hooks::GetWaterHeightLOD;
 float __fastcall GetWaterHeightLODHook(TESWorldSpace* This, UInt32 edx) {
 	
 	float r = This->waterHeight;
-
-	if (*(void**)This == (void*)0x0103195C) r = Tes->GetWaterHeight(Player);
+	if (TheSettingManager->SettingsMain.Main.ForceReflections) {
+		if (*(void**)This == (void*)0x0103195C) r = TheShaderManager->ShaderConst.Water.waterSettings.x;
+	}
 	return r;
 
 }
@@ -171,7 +178,7 @@ void* __fastcall ShowDetectorWindowHook(DetectorWindow* This, UInt32 edx, HWND H
 	NiAVObject* Object = NULL;
 	void* r = NULL;
 
-	r = (ShowDetectorWindow)(This, Handle, Instance, RootNode, "Pipeline detector by Alenet", X, Y, 1280, 1024);
+	r = (ShowDetectorWindow)(This, Handle, Instance, RootNode, (char*)"Pipeline detector by Alenet", X, Y, 1280, 1024);
 	for (int i = 0; i < RootNode->m_children.end; i++) {
 		NiNode* Node = (NiNode*)RootNode->m_children.data[i];
 		Node->m_children.data[0] = NULL;
@@ -249,4 +256,37 @@ __declspec(naked) void DetectorWindowConsoleCommandHook() {
 		jmp		Jumpers::DetectorWindow::ConsoleCommandReturn
 	}
 
+}
+
+void __fastcall MuzzleLightCullingFix(MuzzleFlash* This) {
+	if (This->light) {
+		if (!This->bEnabled) {
+			This->light->m_flags |= 1;
+		}
+		else {
+			This->light->m_flags &= ~1;
+		}
+	}
+	ThisCall(0x9BB8A0, This);
+}
+
+typedef bool(__cdecl* DisableFormatUpgradeFunc)();
+typedef bool(__cdecl* EnableFormatUpgradeFunc)();
+
+BSRenderedTexture* (__cdecl* CreateBSRenderedTexture)(BSString*, const UInt32, const UInt32, NiTexture::FormatPrefs*, UInt32, bool, NiDepthStencilBuffer*, UInt32, UInt32) = (BSRenderedTexture * (__cdecl*)(BSString*, const UInt32, const UInt32, NiTexture::FormatPrefs*, UInt32, bool, NiDepthStencilBuffer*, UInt32, UInt32))Hooks::CreateRenderedTexture;
+BSRenderedTexture* __cdecl CreateSaveTextureHook(BSString* apName, const UInt32 uiWidth, const UInt32 uiHeight, NiTexture::FormatPrefs* kPrefs, 
+	UInt32 eMSAAPref, bool bUseDepthStencil, NiDepthStencilBuffer* pkDSBuffer, UInt32 a7, UInt32 uiBackgroundColor) {
+	HMODULE hDLL = GetModuleHandle(L"d3d9.dll");
+
+	// If the loaded library is DXVK-HDR (https://github.com/EndlesslyFlowering/dxvk), these will pass
+	DisableFormatUpgradeFunc disable = (DisableFormatUpgradeFunc)GetProcAddress(hDLL, "DXVK_D3D9_HDR_DisableRenderTargetUpgrade");
+	EnableFormatUpgradeFunc enable = (DisableFormatUpgradeFunc)GetProcAddress(hDLL, "DXVK_D3D9_HDR_EnableRenderTargetUpgrade");
+
+	if (disable)
+		disable(); // Temporarily disable the format upgrade for the texture
+	BSRenderedTexture* pTexture = CreateBSRenderedTexture(apName, uiWidth, uiHeight, kPrefs, eMSAAPref, bUseDepthStencil, pkDSBuffer, a7, uiBackgroundColor);
+	if (enable)
+		enable(); // Restore the format upgrade functionality 
+
+	return pTexture;
 }

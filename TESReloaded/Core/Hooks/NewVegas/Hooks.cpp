@@ -26,11 +26,15 @@ void AttachHooks() {
 	DetourAttach(&(PVOID&)RenderFirstPerson,			&RenderFirstPersonHook);
 	DetourAttach(&(PVOID&)SetShaders,					&SetShadersHook);
 	DetourAttach(&(PVOID&)SetSamplerState,				&SetSamplerStateHook);
-	DetourAttach(&(PVOID&)RenderReflections,			&RenderReflectionsHook);
+	
+	if (SettingsMain->Main.ForceReflections) {
+		DetourAttach(&(PVOID&)RenderReflections, &RenderReflectionsHook);
+		DetourAttach(&(PVOID&)GetWaterHeightLOD, &GetWaterHeightLODHook);
+	}
+
 	DetourAttach(&(PVOID&)RenderPipboy,					&RenderPipboyHook);
 	DetourAttach(&(PVOID&)ShowDetectorWindow,			&ShowDetectorWindowHook);
 	DetourAttach(&(PVOID&)LoadForm,						&LoadFormHook);
-	DetourAttach(&(PVOID&)GetWaterHeightLOD, &GetWaterHeightLODHook);
 	if (SettingsMain->FlyCam.Enabled) DetourAttach(&(PVOID&)UpdateFlyCam, &UpdateFlyCamHook);
 	DetourTransactionCommit();
 	
@@ -65,12 +69,15 @@ void AttachHooks() {
 	SafeWriteCall(0x00875B86, 0x00710AB0); // Sets the world fov at the end of 1st person rendering
 	SafeWriteCall(0x00875B9D, 0x00710AB0); // Sets the world fov at the end of 1st person rendering
 	SafeWriteJump(0x00C03F49, 0x00C03F5A); // Fixes wrong rendering for image space effects
+
+	SafeWriteCall(0x9BB158, (UInt32)MuzzleLightCullingFix);
+	SafeWriteCall(0x879061, (UInt32)CreateSaveTextureHook); // Fixes image corruption in save screenshots when using DXVK with the HDR mod 
 	
-	//if (SettingsMain->Shaders.Water) {
+	if (SettingsMain->Main.ForceReflections) {
 		//*Pointers::ShaderParams::WaterHighResolution = 1;
 		SafeWriteCall(Jumpers::MultiBoundWaterHeight::Fix1, (UInt32)MultiBoundWaterHeightFix);
 		SafeWriteCall(Jumpers::MultiBoundWaterHeight::Fix2, (UInt32)MultiBoundWaterHeightFix);
-	//}
+	}
 
 	if (TheSettingManager->SettingsMain.Main.ReplaceIntro) SafeWriteJump(Jumpers::SetTileShaderConstants::Hook, (UInt32)SetTileShaderConstantsHook);
 	

@@ -1,7 +1,26 @@
 #pragma once
 #define FrameFVF D3DFVF_XYZ | D3DFVF_TEX1
 
-enum ShaderCompileType{
+
+class Animator {
+public:
+	Animator();
+	virtual ~Animator();
+	void				Initialize(float startValue);
+	float				GetValue();
+	void				Start(float duration, float finalValue);
+
+	TimeGlobals* time;
+	float				startValue;
+	float				endValue;
+	float				startTime;
+	float				endTime;
+	bool				running;
+	bool				switched; // set to true/false to detect if animator has been run before
+};
+
+
+enum ShaderCompileType {
 	AlwaysOff,
 	AlwaysOn,
 	RecompileChanged,
@@ -10,13 +29,13 @@ enum ShaderCompileType{
 };
 
 struct ShaderConstants {
-	
+
 	struct ShadowMapStruct {
 		D3DXMATRIXA16	ShadowWorld;
 		D3DXMATRIX		ShadowViewProj;
 		D3DXMATRIX		ShadowCameraToLight[5];
 		D3DXVECTOR4		ShadowCubeMapLightPosition;
-		D3DXVECTOR4		ShadowLightPosition[4];
+		D3DXVECTOR4		ShadowLightPosition[ShadowCubeMapsMax];
 		D3DXVECTOR4		ShadowCubeMapBlend;
 		D3DXVECTOR4		ShadowMapRadius;
 	};
@@ -50,12 +69,14 @@ struct ShaderConstants {
 	};
 	struct ShadowStruct {
 		D3DXVECTOR4		Data;
+		D3DXVECTOR4		ScreenSpaceData;
 		D3DXVECTOR4		OrthoData;
 	};
-	struct RainStruct{
+	struct RainStruct {
 		D3DXVECTOR4		RainData;
+		D3DXVECTOR4		RainAspect;
 	};
-	struct SnowStruct{
+	struct SnowStruct {
 		D3DXVECTOR4		SnowData;
 	};
 	struct WaterLensStruct {
@@ -73,6 +94,9 @@ struct ShaderConstants {
 		D3DXVECTOR4		Blur;
 		D3DXVECTOR4		Data;
 	};
+	struct ExposureStruct {
+		D3DXVECTOR4		Data;
+	};
 	struct AmbientOcclusionStruct {
 		bool			Enabled;
 		D3DXVECTOR4		AOData;
@@ -85,6 +109,10 @@ struct ShaderConstants {
 		D3DXVECTOR4		Values;
 	};
 	struct CinemaStruct {
+		D3DXVECTOR4		Data;
+		D3DXVECTOR4		Settings;
+	};
+	struct LensStruct {
 		D3DXVECTOR4		Data;
 	};
 	struct BloomStruct {
@@ -127,7 +155,16 @@ struct ShaderConstants {
 	};
 
 	struct SpecularStruct {
+		D3DXVECTOR4		EffectStrength;
 		D3DXVECTOR4		Data;
+	};
+
+	struct AnimatorsStruct {
+		Animator			RainAnimator;
+		Animator			PuddlesAnimator;
+		Animator			WaterLensAnimator;
+		Animator			SnowAnimator;
+		Animator			SnowAccumulationAnimator;
 	};
 
 	D3DXVECTOR4				ReciprocalResolution;
@@ -135,23 +172,24 @@ struct ShaderConstants {
 	D3DXVECTOR4				SunTiming;
 	D3DXVECTOR4				SunAmount;
 	D3DXVECTOR4				ShadowFade;
+	D3DXVECTOR4				ViewSpaceLightDir;
 	D3DXVECTOR4				ScreenSpaceLightDir;
 	D3DXVECTOR4				GameTime;
-	TESWeather*				pWeather;
-	float					currentsunGlare;
-	float					currentwindSpeed;
-	UInt8					oldsunGlare;
-	UInt8					oldwindSpeed;
+	TESWeather* pWeather;
+	float					sunGlare;
+	float					windSpeed;
 	D3DXVECTOR4				fogColor;
-	D3DXVECTOR4				oldfogColor;
+	D3DXVECTOR4				horizonColor;
 	D3DXVECTOR4				sunColor;
-	D3DXVECTOR4				oldsunColor;
+	D3DXVECTOR4				sunAmbient;
+	D3DXVECTOR4				skyColor;
 	D3DXVECTOR4				fogData;
 	D3DXVECTOR4				fogDistance;
-	float					currentfogStart;
-	float					oldfogStart;
-	float					currentfogEnd;
-	float					oldfogEnd;
+	float					fogStart;
+	float					fogEnd;
+	float					fogPower;
+	ExposureStruct			Exposure;
+	AnimatorsStruct			Animators;
 	ShadowMapStruct			ShadowMap;
 	OcclusionMapStruct		OcclusionMap;
 	WaterStruct				Water;
@@ -169,6 +207,7 @@ struct ShaderConstants {
 	AmbientOcclusionStruct	AmbientOcclusion;
 	ColoringStruct			Coloring;
 	CinemaStruct			Cinema;
+	LensStruct				Lens;
 	BloomStruct				Bloom;
 	SnowAccumulationStruct	SnowAccumulation;
 	BloodLensStruct			BloodLens;
@@ -178,14 +217,15 @@ struct ShaderConstants {
 	SharpeningStruct		Sharpening;
 	SpecularStruct			Specular;
 	VolumetricFogStruct		VolumetricFog;
+	D3DXVECTOR4				DebugVar;
 };
 
 struct ShaderValue {
 	UInt32				RegisterIndex;
 	UInt32				RegisterCount;
 	union {
-	D3DXVECTOR4*		Value;
-	TextureRecord*		Texture;
+		D3DXVECTOR4* Value;
+		TextureRecord* Texture;
 	};
 };
 
@@ -193,16 +233,18 @@ class ShaderProgram {
 public:
 	ShaderProgram();
 	virtual ~ShaderProgram();
-	
+
 	virtual void			SetCT() = 0;
 	virtual void			CreateCT(ID3DXBuffer* ShaderSource, ID3DXConstantTable* ConstantTable) = 0;
 
 	void					SetConstantTableValue(LPCSTR Name, UInt32 Index);
 	static bool ShouldCompileShader(const char* fileBin, const char* fileHlsl, ShaderCompileType CompileStatus);
 
-	ShaderValue*			FloatShaderValues;
+	std::unordered_map<LPCSTR, D3DXVECTOR4*>	tableShaderStringsToConstants;
+
+	ShaderValue* FloatShaderValues;
 	UInt32					FloatShaderValuesCount;
-	ShaderValue*			TextureShaderValues;
+	ShaderValue* TextureShaderValues;
 	UInt32					TextureShaderValuesCount;
 };
 
@@ -210,14 +252,14 @@ class ShaderRecord : public ShaderProgram {
 public:
 	ShaderRecord();
 	virtual ~ShaderRecord();
-	
+
 	virtual void			SetCT();
- 	virtual void			CreateCT(ID3DXBuffer* ShaderSource, ID3DXConstantTable* ConstantTable);
+	virtual void			CreateCT(ID3DXBuffer* ShaderSource, ID3DXConstantTable* ConstantTable);
 	virtual void			SetShaderConstantF(UInt32 RegisterIndex, D3DXVECTOR4* Value, UInt32 RegisterCount) = 0;
 
-	static ShaderRecord*	LoadShader(const char* Name, const char* SubPath);
-	
-	bool					HasRenderedBuffer; 
+	static ShaderRecord* LoadShader(const char* Name, const char* SubPath);
+
+	bool					HasRenderedBuffer;
 	bool					HasDepthBuffer;
 };
 
@@ -225,7 +267,7 @@ class ShaderRecordVertex : public ShaderRecord {
 public:
 	ShaderRecordVertex();
 	virtual ~ShaderRecordVertex();
-	
+
 	virtual void			SetShaderConstantF(UInt32 RegisterIndex, D3DXVECTOR4* Value, UInt32 RegisterCount);
 
 	IDirect3DVertexShader9* ShaderHandle;
@@ -235,10 +277,10 @@ class ShaderRecordPixel : public ShaderRecord {
 public:
 	ShaderRecordPixel();
 	virtual ~ShaderRecordPixel();
-	
+
 	virtual void			SetShaderConstantF(UInt32 RegisterIndex, D3DXVECTOR4* Value, UInt32 RegisterCount);
 
-	IDirect3DPixelShader9*	ShaderHandle;
+	IDirect3DPixelShader9* ShaderHandle;
 };
 
 class NiD3DVertexShaderEx : public NiD3DVertexShader {
@@ -246,10 +288,10 @@ public:
 	void					SetupShader(IDirect3DVertexShader9* CurrentVertexHandle);
 	void					DisposeShader();
 
-	ShaderRecordVertex*		ShaderProg;
-	ShaderRecordVertex*		ShaderProgE;
-	ShaderRecordVertex*		ShaderProgI;
-	IDirect3DVertexShader9*	ShaderHandleBackup;
+	ShaderRecordVertex* ShaderProg;
+	ShaderRecordVertex* ShaderProgE;
+	ShaderRecordVertex* ShaderProgI;
+	IDirect3DVertexShader9* ShaderHandleBackup;
 	char					ShaderName[40];
 };
 
@@ -258,10 +300,10 @@ public:
 	void					SetupShader(IDirect3DPixelShader9* CurrentPixelHandle);
 	void					DisposeShader();
 
-	ShaderRecordPixel*		ShaderProg;
-	ShaderRecordPixel*		ShaderProgE;
-	ShaderRecordPixel*		ShaderProgI;
-	IDirect3DPixelShader9*	ShaderHandleBackup;
+	ShaderRecordPixel* ShaderProg;
+	ShaderRecordPixel* ShaderProgE;
+	ShaderRecordPixel* ShaderProgI;
+	IDirect3DPixelShader9* ShaderHandleBackup;
 	char					ShaderName[40];
 };
 
@@ -269,49 +311,24 @@ class EffectRecord : public ShaderProgram {
 public:
 	EffectRecord();
 	virtual ~EffectRecord();
-	
-	enum EffectRecordType {
-		Underwater,
-		WaterLens,
-		GodRays,
-		DepthOfField,
-		AmbientOcclusion,
-		Coloring,
-		Cinema,
-		Bloom,
-		SnowAccumulation,
-		BloodLens,
-		MotionBlur,
-		LowHF,
-		WetWorld,
-		Sharpening,
-		Specular,
-		VolumetricFog,
-		Rain,
-		Snow,
-		ShadowsExteriors,
-		ShadowsInteriors,
-		Extra,
-	};
 
 	virtual void			SetCT();
 	virtual void			CreateCT(ID3DXBuffer* ShaderSource, ID3DXConstantTable* ConstantTable);
-	void					SwitchEffect();
-	void					Render(IDirect3DDevice9* Device, IDirect3DSurface9* RenderTarget, IDirect3DSurface9* RenderedSurface, bool ClearRenderTarget);
+	bool					SwitchEffect();
+	void					Render(IDirect3DDevice9* Device, IDirect3DSurface9* RenderTarget, IDirect3DSurface9* RenderedSurface, bool ClearRenderTarget, bool useSourceBuffer);
 	void					DisposeEffect();
-	bool					LoadEffect(bool alwaysCompile = false); 
-	bool 					IsLoaded();
-	
-	static EffectRecord*	LoadEffect(const char* Name);
+	bool					LoadEffect(bool alwaysCompile = false);
 
+	static EffectRecord* LoadEffect(const char* Name);
+	bool 					IsLoaded();
 	bool					Enabled;
-	ID3DXEffect*			Effect;
-	EffectRecordType		Type;
-	std::string*			Path;
-	std::string*			SourcePath;
+
+	ID3DXEffect* Effect;
+	std::string* Path;
+	std::string* SourcePath;
 };
 
-typedef std::map<std::string, EffectRecord*> ExtraEffectsList;
+typedef std::map<std::string, EffectRecord**> EffectsList;
 typedef std::map<std::string, D3DXVECTOR4> CustomConstants;
 
 struct		FrameVS { float x, y, z, u, v; };
@@ -327,13 +344,14 @@ public:
 	void					PrepareShaderIncludes();
 	void					InitializeConstants();
 	void					UpdateConstants();
-	void					CreateShader(const char* Name);
-	void					LoadShader(NiD3DVertexShader* VertexShader);
-	void					LoadShader(NiD3DPixelShader* PixelShader);
+	bool					CreateShader(const char* Name);
+	bool					LoadShader(NiD3DVertexShader* VertexShader);
+	bool					LoadShader(NiD3DPixelShader* PixelShader);
 	void					DisposeShader(const char* Name);
-	void					CreateEffect(EffectRecord::EffectRecordType EffectType);
-	void					DisposeEffect(EffectRecord::EffectRecordType EffectType);
+	EffectRecord* CreateEffect(const char* Name, bool setEnabled);
+	void					DisposeEffect(EffectRecord** Effect);  // unused?
 	void					RenderEffects(IDirect3DSurface9* RenderTarget);
+	void					RenderEffectToRT(IDirect3DSurface9* RenderTarget, EffectRecord* Effect, bool clearRenderTarget);
 	void					SwitchShaderStatus(const char* Name);
 	void					SetCustomConstant(const char* Name, D3DXVECTOR4 Value);
 	void					SetExtraEffectEnabled(const char* Name, bool Value);
@@ -341,35 +359,51 @@ public:
 	static float			invLerp(float a, float b, float t);
 	static float			smoothStep(float a, float b, float t);
 	static float			clamp(float a, float b, float t);
-		
+
+	struct	EffectsStruct {
+		EffectRecord* AvgLuma;
+		EffectRecord* AmbientOcclusion;
+		EffectRecord* BloodLens;
+		EffectRecord* Bloom;
+		EffectRecord* Coloring;
+		EffectRecord* Cinema;
+		EffectRecord* Exposure;
+		EffectRecord* DepthOfField;
+		EffectRecord* Debug;
+		EffectRecord* GodRays;
+		EffectRecord* Lens;
+		EffectRecord* LowHF;
+		EffectRecord* MotionBlur;
+		EffectRecord* Normals;
+		EffectRecord* Rain;
+		EffectRecord* Sharpening;
+		EffectRecord* Specular;
+		EffectRecord* Snow;
+		EffectRecord* SnowAccumulation;
+		EffectRecord* ShadowsExteriors;
+		EffectRecord* ShadowsInteriors;
+		EffectRecord* PointShadows;
+		EffectRecord* PointShadows2;
+		EffectRecord* SunShadows;
+		EffectRecord* Underwater;
+		EffectRecord* VolumetricFog;
+		EffectRecord* WaterLens;
+		EffectRecord* WetWorld;
+		EffectsList			ExtraEffects;
+	};
+
+	EffectsStruct			Effects;
+	EffectsList				EffectsNames;
 	ShaderConstants			ShaderConst;
 	CustomConstants			CustomConst;
-	IDirect3DVertexBuffer9*	FrameVertex;
-	EffectRecord*			UnderwaterEffect;
-	EffectRecord*			WaterLensEffect;
-	EffectRecord*			GodRaysEffect;
-	EffectRecord*			DepthOfFieldEffect;
-	EffectRecord*			AmbientOcclusionEffect;
-	EffectRecord*			ColoringEffect;
-	EffectRecord*			CinemaEffect;
-	EffectRecord*			BloomEffect;
-	EffectRecord*			SnowAccumulationEffect;
-	EffectRecord*			BloodLensEffect;
-	EffectRecord*			MotionBlurEffect;
-	EffectRecord*			LowHFEffect;
-	EffectRecord*			WetWorldEffect;
-	EffectRecord*			SharpeningEffect;
-	EffectRecord*			SpecularEffect;
-	EffectRecord*			VolumetricFogEffect;
-	EffectRecord*			RainEffect;
-	EffectRecord*			SnowEffect;
-	EffectRecord*			ShadowsExteriorsEffect;
-	EffectRecord*			ShadowsInteriorsEffect;
-	ExtraEffectsList		ExtraEffects;
-	NiD3DVertexShader*		WaterVertexShaders[51];
-	NiD3DPixelShader*		WaterPixelShaders[51];
-    TESObjectCELL*          PreviousCell;
-    bool                    IsMenuSwitch;
-	
+	IDirect3DVertexBuffer9* FrameVertex;
+	NiD3DVertexShader* WaterVertexShaders[51];
+	NiD3DPixelShader* WaterPixelShaders[51];
+	TESObjectCELL* PreviousCell;
+	bool                    IsMenuSwitch;
+	bool                    orthoRequired;
+	bool                    avglumaRequired;
+	D3DXVECTOR4				LightPosition[TrackedLightsMax];
+	D3DXVECTOR4				LightAttenuation[TrackedLightsMax];
 };
 

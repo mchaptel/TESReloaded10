@@ -1,9 +1,13 @@
 #pragma once
+#include <../lib/tomlplusplus/include/toml++/toml.h>
+
 
 struct SettingsMainStruct {
 
 	struct MainStruct {
 		bool	RemoveUnderwater;
+		bool	ForceMSAA;
+		bool	ForceReflections;
 		bool	RemovePrecipitations;
 		bool	MemoryHeapManagement;
 		bool	MemoryTextureManagement;
@@ -127,29 +131,6 @@ struct SettingsMainStruct {
 		bool Extra;
 	};
 
-	struct EffectsStruct {
-		bool AmbientOcclusion;
-		bool BloodLens;
-		bool Bloom;
-		bool Cinema;
-		bool Coloring;
-		bool DepthOfField;
-		bool GodRays;
-		bool LowHF;
-		bool MotionBlur;
-		bool Rain;
-		bool Snow;
-		bool Sharpening;
-		bool SnowAccumulation;
-		bool Underwater;
-		bool WaterLens;
-		bool WetWorld;
-		bool VolumetricFog;
-		bool ShadowsExteriors;
-		bool ShadowsInteriors;
-		bool Specular;
-		bool Extra;
-	};
 
 	struct MenuStruct {
 		char	TextFont[40];
@@ -182,13 +163,6 @@ struct SettingsMainStruct {
 		int		ItemColumnSize;
 		int		RowSpace;
 		int		RowsPerPage;
-	};
-
-	struct LowHFSoundStruct {
-		bool	HealthEnabled;
-		bool	FatigueEnabled;
-		float	HealthCoeff;
-		float	FatigueCoeff;
 	};
 
 	struct PurgerStruct {
@@ -239,9 +213,7 @@ struct SettingsMainStruct {
 	WeatherModeStruct			WeatherMode;
 	ShadowModeStruct			ShadowMode;
 	ShadersStruct				Shaders;
-	EffectsStruct				Effects;
 	MenuStruct					Menu;
-	LowHFSoundStruct			LowHFSound;
 	PurgerStruct				Purger;
 	GravityStruct				Gravity;
 	DodgeStruct					Dodge;
@@ -281,6 +253,7 @@ struct SettingsShadowStruct {
         UInt8               ShadowMode;
 		float				ShadowMapRadius[5];
 		float				ShadowMapFarPlane;
+		bool				UsePointShadows;
 		ExcludedFormsList	ExcludedForms;
 	};
 	
@@ -292,11 +265,19 @@ struct SettingsShadowStruct {
 		int					LightPoints;
 		int					Quality;
 		int					ShadowCubeMapSize;
+		int					DrawDistance;
 		float				Darkness;
 		float				LightRadiusMult;
 		ExcludedFormsList	ExcludedForms;
 	};
 
+	struct ScreenSpaceStruct {
+		bool				Enabled;
+		float				BlurRadius;
+		float				RenderDistance;
+	};
+
+	ScreenSpaceStruct	ScreenSpace;
 	ExteriorsStruct		Exteriors;
 	InteriorsStruct		Interiors;
 };
@@ -318,116 +299,35 @@ struct SettingsWaterStruct {
 	float depthDarkness;
 };
 
-struct SettingsWaterLensStruct {
-	float TimeMultA;
-	float TimeMultB;
-	float Time;
-	float Amount;
-	float Viscosity;
-};
-
-struct SettingsGrassStruct {
-	bool WindEnabled;
-	int GrassDensity;
-	float WindCoefficient;
-	float ScaleX;
-	float ScaleY;
-	float ScaleZ;
-	float MinDistance;
-	float MaxDistance;
-};
-
-struct SettingsHDRStruct {
-	float ToneMapping;
-	float ToneMappingBlur;
-	float ToneMappingColor;
-	float Linearization;
-};
-
-struct SettingsPOMStruct {
-	float HeightMapScale;
-	float MinSamples;
-	float MaxSamples;
-};
-
-struct SettingsTerrainStruct {
-	float DistantSpecular;
-	float DistantNoise;
-	float NearSpecular;
-	float MiddleSpecular;
-};
-
-struct SettingsSkinStruct {
-	float Attenuation;
-	float SpecularPower;
-	float MaterialThickness;
-	float RimScalar;
-	float CoeffRed;
-	float CoeffGreen;
-	float CoeffBlue;
-};
-
-struct SettingsGodRaysStruct {
-	bool TimeEnabled;
-	bool SunGlareEnabled;
-	int LightShaftPasses;
-	float RayIntensity;
-	float RayLength;
-	float RayDensity;
-	float RayVisibility;
-	float Luminance;
-	float GlobalMultiplier;
-	float RayR;
-	float RayG;
-	float RayB;
-	float Saturate;
-};
-
-struct SettingsDepthOfFieldStruct {
-	bool Enabled;
-	bool DistantBlur;
-	UInt8 Mode;
-	float DistantBlurStartRange;
-	float DistantBlurEndRange;
-	float BaseBlurRadius;
-	float BlurFallOff;
-	float Radius;
-	float DiameterRange;
-	float NearBlurCutOff;
-};
 
 struct SettingsSpecularStruct {
 	bool Enabled;
 	
 	struct ExteriorStruct {
-		float Strength;
+		float SpecularStrength;
 		float BlurMultiplier;
 		float Glossiness;
 		float DistanceFade;
+		float FresnelStrength;
+		float SkyTintStrength;
+		float SpecLumaTreshold;
+		float SkyTintSaturation;
 	};
 
 	struct RainStruct {
-		float Strength;
+		float SpecularStrength;
 		float BlurMultiplier;
 		float Glossiness;
 		float DistanceFade;
+		float FresnelStrength;
+		float SkyTintStrength;
+		float SpecLumaTreshold;
+		float SkyTintSaturation;
 	};
 
 	ExteriorStruct Exterior;
 	RainStruct Rain;
 
-};
-
-struct SettingsAmbientOcclusionStruct {
-	bool Enabled;
-	float Samples;
-	float StrengthMultiplier;
-	float ClampStrength;
-	float AngleBias;
-	float Range;
-	float LumThreshold;
-	float BlurDropThreshold;
-	float BlurRadiusMultiplier;
 };
 
 struct SettingsColoringStruct {
@@ -449,98 +349,6 @@ struct SettingsColoringStruct {
 	float Linearization;
 };
 
-struct SettingsCinemaStruct {
-	UInt8 Mode;
-	float AspectRatio;
-	float VignetteRadius;
-	float VignetteDarkness;
-};
-
-struct SettingsBloomStruct {
-	float BloomIntensity;
-	float OriginalIntensity;
-	float BloomSaturation;
-	float OriginalSaturation;
-	float Luminance;
-	float MiddleGray;
-	float WhiteCutOff;
-};
-
-struct SettingsPrecipitationsStruct {
-	struct RainStruct {
-		float DepthStep;
-		float Speed;
-	};
-	
-	struct SnowStruct {
-		float DepthStep;
-		float Flakes;
-		float Speed;
-	};
-	
-	struct WetWorldStruct {
-		float Amount;
-		float Increase;
-		float Decrease;
-		float PuddleCoeff_R;
-		float PuddleCoeff_G;
-		float PuddleCoeff_B;
-		float PuddleSpecularMultiplier;
-	};
-
-	struct SnowAccumulationStruct {
-		float Amount;
-		float Increase;
-		float Decrease;
-		float SunPower;
-		float BlurNormDropThreshhold;
-		float BlurRadiusMultiplier;
-	};
-	
-	RainStruct				Rain;
-	SnowStruct				Snow;
-	WetWorldStruct			WetWorld;
-	SnowAccumulationStruct	SnowAccumulation;
-};
-
-struct SettingsBloodLensStruct {
-	float Chance;
-	float ColorR;
-	float ColorG;
-	float ColorB;
-	float Intensity;
-	float Time;
-};
-
-struct SettingsMotionBlurStruct {
-	bool Enabled;
-	float GaussianWeight;
-	float BlurScale;
-	float BlurOffsetMax;
-	float BlurCutOff;
-};
-
-struct SettingsLowHFStruct {
-	float HealthLimit;
-	float FatigueLimit;
-	float LumaMultiplier;
-	float BlurMultiplier;
-	float VignetteMultiplier;
-	float DarknessMultiplier;
-};
-
-struct SettingsSharpeningStruct {
-	float Strength;
-	float Clamp;
-	float Offset;
-};
-
-struct SettingsVolumetricFogStruct {
-	float Exponent;
-	float ColorCoeff;
-	float Amount;
-	float MaxDistance;
-};
 
 struct SettingsWeatherStruct {
 	char					LowerLayer[80];
@@ -595,15 +403,15 @@ public:
 		typedef	std::vector<ConfigNode> SettingList;
 
 		void			Init();
-		SectionPosition	GoToSection(const char* Section, const char* FromPosition = NULL);
 		bool			FillNode(ConfigNode* Node, const char* Section, const char* Key);
-		char*			GetAttribute(char* KeyPosition, const char* Attribute, char* AttributeValue);
 		void			FillSections(StringList* Sections, const char* ParentSection);
 		void			FillSettings(SettingList* Nodes, const char* Section);
 		void			SetValue(ConfigNode* Node);
-		void			SetAttribute(char* KeyPosition, const char* Attribute, const char* Value);
 		void			CreateWeatherSection(const char* WeatherName, TESWeather* Weather);
 
+		toml::table		TomlConfig;
+		toml::table		DefaultConfig;
+		bool			configLoaded;
 		char*			Config;
 		char*			ConfigB;
 		UInt32			FileSize;
@@ -616,14 +424,22 @@ public:
 	float					GetSettingF(const char* Section, const char* Key);
 	char*					GetSettingS(const char* Section, const char* Key, char* Value);
 	void					SetSetting(const char* Section, const char* Key, float Value);
+	void					SetSetting(const char* Section, const char* Key, UINT8 Value);
+	void					SetSetting(const char* Section, const char* Key, bool Value);
 	void					SetSettingS(const char* Section, const char* Key, char* Value);
 	void					SetSetting(Configuration::ConfigNode* Node);
+	void					Increment(const char* Section, const char* Key);
+	void					Decrement(const char* Section, const char* Key);
 	void					SetSettingWeather(const char* Section, const char* Key, float Value);
 	void					FillMenuSections(StringList* Sections, const char* ParentSection);
 	void					FillMenuSettings(Configuration::SettingList* Settings, const char* Section);
-	void					CreateNodeF(Configuration::ConfigNode* Node, const char* Section, const char* Key, float Value, bool Reboot, UInt32 Type);
+	void					CreateNode(Configuration::ConfigNode* Node, const char* Section, const char* Key, float Value, bool Reboot);
+	void					CreateNode(Configuration::ConfigNode* Node, const char* Section, const char* Key, UINT8 Value, bool Reboot);
+	void					CreateNode(Configuration::ConfigNode* Node, const char* Section, const char* Key, bool Value, bool Reboot);
 	void					CreateNodeS(Configuration::ConfigNode* Node, const char* Section, const char* Key, const char* Value, bool Reboot);
 	bool					GetMenuShaderEnabled(const char* Name);
+	void					SetMenuShaderEnabled(const char* Name, bool enabled);
+	bool*					GetMenuShaderSetting(const char* Name);
 	SettingsWaterStruct*	GetSettingsWater(const char* PlayerLocation);
 	SettingsColoringStruct* GetSettingsColoring(const char* PlayerLocation);
 	SettingsWeatherStruct*	GetSettingsWeather(const char* WeatherName);
@@ -634,32 +450,11 @@ public:
 	static void									SplitString(const char* String, const char* Delimiter, StringList* Values);
 	template <typename T> static void			FillFromString(const char* String, const char* Delimiter, T* Values);
 
+				
 	Configuration					Config;
 	bool							GameLoading;
 	SettingsMainStruct				SettingsMain;
-	SettingsAmbientOcclusionStruct	SettingsAmbientOcclusionExteriors;
-	SettingsAmbientOcclusionStruct	SettingsAmbientOcclusionInteriors;
-	SettingsBloodLensStruct			SettingsBloodLens;
-	SettingsBloomStruct				SettingsBloomExteriors;
-	SettingsBloomStruct				SettingsBloomInteriors;
-	SettingsCinemaStruct			SettingsCinema;
-	SettingsDepthOfFieldStruct		SettingsDepthOfFieldFirstPersonView;
-	SettingsDepthOfFieldStruct		SettingsDepthOfFieldThirdPersonView;
-	SettingsDepthOfFieldStruct		SettingsDepthOfFieldVanityView;
-	SettingsGodRaysStruct			SettingsGodRays;
-	SettingsGrassStruct				SettingsGrass;
-	SettingsHDRStruct				SettingsHDR;
-	SettingsLowHFStruct				SettingsLowHF;
-	SettingsMotionBlurStruct		SettingsMotionBlurFirstPersonView;
-	SettingsMotionBlurStruct		SettingsMotionBlurThirdPersonView;
-	SettingsPOMStruct				SettingsPOM;
-	SettingsPrecipitationsStruct	SettingsPrecipitations;
 	SettingsShadowStruct			SettingsShadows;
-	SettingsSharpeningStruct		SettingsSharpening;
-	SettingsSkinStruct				SettingsSkin;
-	SettingsTerrainStruct			SettingsTerrain;
-	SettingsVolumetricFogStruct		SettingsVolumetricFog;
-	SettingsWaterLensStruct			SettingsWaterLens;
 	SettingsWaterMap				SettingsWater;
 	SettingsColoringMap				SettingsColoring;
 	SettingsWeatherMap				SettingsWeather;

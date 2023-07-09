@@ -76,13 +76,17 @@ assert(sizeof(NiPoint2) == 0x008);
 
 class NiPoint3 {
 public:
-	float NiPoint3::operator * (const NiPoint3 pt) const { return x * pt.x + y * pt.y + z * pt.z; }
+	float operator * (const NiPoint3 pt) const { return x * pt.x + y * pt.y + z * pt.z; }
 
 	void GetLookAt(NiPoint3* LookAt, NiPoint3* Rotation);
 
 	float x;
 	float y;
 	float z;
+
+	D3DXVECTOR4		toD3DXVEC4() {
+		return D3DXVECTOR4(x, y, z, 1.0);
+	}
 };
 assert(sizeof(NiPoint3) == 0x00C);
 
@@ -99,14 +103,14 @@ assert(sizeof(NiVector4) == 0x010);
 
 class NiMatrix33 {
 public:
-	NiPoint3 NiMatrix33::operator * (const NiPoint3 pt) const {
+	NiPoint3 operator * (const NiPoint3 pt) const {
 		return {
 			data[0][0] * pt.x + data[0][1] * pt.y + data[0][2] * pt.z,
 			data[1][0] * pt.x + data[1][1] * pt.y + data[1][2] * pt.z,
 			data[2][0] * pt.x + data[2][1] * pt.y + data[2][2] * pt.z
 		};
 	}
-	NiMatrix33 NiMatrix33::operator * (const NiMatrix33 mat) const {
+	NiMatrix33 operator * (const NiMatrix33 mat) const {
 		NiMatrix33 prd;
 
 		prd.data[0][0] =
@@ -589,9 +593,9 @@ assert(sizeof(NiLight) == 0xF0);
 
 class NiPointLight : public NiLight {
 public:
-	float			attenuation1;		// F0
-	float			attenuation2;		// F4
-	float			attenuation3;		// F8
+	float			Atten0;		// F0
+	float			Atten1;		// F4
+	float			Atten2;		// F8
 };
 assert(sizeof(NiPointLight) == 0xFC);
 
@@ -1848,27 +1852,36 @@ assert(sizeof(BSTreeNode) == 0xF8);
 
 class ShadowSceneLight : public NiRefObject {
 public:
-	UInt32					unk008;			// 008
-	float					flt00C[53];		// 00C
-	NiTList<NiTriBasedGeom>	lgtList0E0;		// 0E0
-	UInt8					byte0EC;		// 0EC
-	UInt8					byte0ED;		// 0ED
-	UInt8					byte0EE[2];		// 0EE
-	UInt32					unk0F0;			// 0F0
-	UInt32					unk0F4;			// 0F4
-	NiPointLight*			sourceLight;	// 0F8
-	UInt32					unk0FC;			// 0FC
-	UInt32					unk100[6];		// 100
-	UInt8					byte118;		// 118
-	UInt8					pad119[3];		// 119
-	float					flt11C;			// 11C
-	float					flt120;			// 120
-	UInt8					byte124;		// 124
-	UInt8					pad125[3];		// 125
-	UInt32					unk128[66];		// 128
-	UInt32					array230[4];	// 230 BSSimpleArray<NiNode>
-	void*					portalGraph;	// 240 BSPortalGraph*
-	UInt32					unk244[3];		// 244
+
+	UInt32					unk008;				// 008
+	float					flt00C[49];			// 00C
+	float					lightFade;
+	float					unk0D4;
+	float					unk0D8;
+	float					unk0DC;
+	NiTList<NiTriBasedGeom>	lgtList0E0;			// 0E0
+	UInt8					byte0EC;			// 0EC
+	UInt8					byte0ED;			// 0ED
+	UInt8					byte0EE[2];			// 0EE
+	UInt32					unk0F0;				// 0F0
+	UInt32					unk0F4;				// 0F4
+	NiPointLight*			sourceLight;		// 0F8
+	UInt32					unk0FC;				// 0FC
+	NiPoint3				fPosition;			// 100
+	UInt32					unk10C;				// 10C
+	UInt16					bIsEnabled;			// 110
+	UInt16					unk112;				// 112
+	UInt32					unk114;				// 114
+	UInt8					byte118;			// 118
+	UInt8					pad119[3];			// 119
+	float					flt11C;				// 11C
+	float					flt120;				// 120
+	UInt8					byte124;			// 124
+	UInt8					pad125[3];			// 125
+	UInt32					unk128[66];			// 128
+	UInt32					array230[4];		// 230 BSSimpleArray<NiNode>
+	void*					portalGraph;		// 240 BSPortalGraph*
+	UInt32					unk244[3];			// 244
 };
 assert(sizeof(ShadowSceneLight) == 0x250);
 

@@ -24,11 +24,19 @@ TextureRecord::TextureRecord() {
 }
 
 bool TextureRecord::LoadTexture(TextureRecordType Type, const char* Name) {
-
 	IDirect3DTexture9* Tex = NULL;
 	IDirect3DVolumeTexture9* TexV = NULL;
 	IDirect3DCubeTexture9* TexC = NULL;
 
+	// assigning shadow cube maps
+	for (int i = 0; i < ShadowCubeMapsMax; i++) {
+		if (Type == ShadowCubeMapBuffer0 + i) {
+			Texture = TheTextureManager->ShadowCubeMapTexture[i];
+			return true;
+		}
+	}
+
+	// other buffers
 	switch (Type) {
 		case PlanarBuffer:
 			D3DXCreateTextureFromFileA(TheRenderManager->device, Name, &Tex);
@@ -54,6 +62,12 @@ bool TextureRecord::LoadTexture(TextureRecordType Type, const char* Name) {
 		case DepthBuffer:
 			Texture = TheTextureManager->DepthTexture;
 			break;
+		case NormalsBuffer:
+			Texture = TheTextureManager->NormalsTexture;
+			break;
+		case AvgLumaBuffer:
+			Texture = TheTextureManager->AvgLumaTexture;
+			break;
 		case ShadowMapBufferNear:
 			Texture = TheTextureManager->ShadowMapTextureBlurred[ShadowManager::ShadowMapTypeEnum::MapNear];
 			break;
@@ -69,17 +83,8 @@ bool TextureRecord::LoadTexture(TextureRecordType Type, const char* Name) {
 		case OrthoMapBuffer:
 			Texture = TheTextureManager->ShadowMapTexture[ShadowManager::ShadowMapTypeEnum::MapOrtho];
 			break;
-		case ShadowCubeMapBuffer0:
-			Texture = TheTextureManager->ShadowCubeMapTexture[0];
-			break;
-		case ShadowCubeMapBuffer1:
-			Texture = TheTextureManager->ShadowCubeMapTexture[1];
-			break;
-		case ShadowCubeMapBuffer2:
-			Texture = TheTextureManager->ShadowCubeMapTexture[2];
-			break;
-		case ShadowCubeMapBuffer3:
-			Texture = TheTextureManager->ShadowCubeMapTexture[3];
+		case PointShadowBuffer:
+			Texture = TheTextureManager->ShadowPassTexture;
 			break;
         default:
             return false; //Texture is invalid or not assigned here.
@@ -91,6 +96,8 @@ bool TextureRecord::LoadTexture(TextureRecordType Type, const char* Name) {
 void TextureManager::Initialize() {
 
 	Logger::Log("Starting the textures manager...");
+	auto timer = TimeLogger();
+	
 	TheTextureManager = new TextureManager();
 
 	IDirect3DDevice9* Device = TheRenderManager->device;
@@ -101,32 +108,28 @@ void TextureManager::Initialize() {
 	UINT ShadowMapSize = 0;
 	UINT ShadowCubeMapSize = ShadowsInteriors->ShadowCubeMapSize;
 	
-	TheTextureManager->SourceTexture = NULL;
-	TheTextureManager->SourceSurface = NULL;
-	TheTextureManager->RenderedTexture = NULL;
-	TheTextureManager->RenderedSurface = NULL;
+	// create textures used by NVR and bind them to surfaces
+	InitTexture(&TheTextureManager->SourceTexture, &TheTextureManager->SourceSurface, Width, Height, D3DFMT_A8R8G8B8);
+	InitTexture(&TheTextureManager->RenderedTexture, &TheTextureManager->RenderedSurface, Width, Height, D3DFMT_A8R8G8B8);
+	InitTexture(&TheTextureManager->ShadowPassTexture, &TheTextureManager->ShadowPassSurface, Width, Height, D3DFMT_A8R8G8B8);
+	InitTexture(&TheTextureManager->NormalsTexture, &TheTextureManager->NormalsSurface, Width, Height, D3DFMT_A16B16G16R16F);
+	InitTexture(&TheTextureManager->AvgLumaTexture, &TheTextureManager->AvgLumaSurface, 1, 1, D3DFMT_A8R8G8B8);
+	//InitTexture(&TheTextureManager->BloomTexture, &TheTextureManager->BloomSurface, Width, Height, D3DFMT_A8R8G8B8);
+
 	TheTextureManager->DepthTexture = NULL;
 	TheTextureManager->DepthSurface = NULL;
-	Device->CreateTexture(Width, Height, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &TheTextureManager->SourceTexture, NULL);
-	Device->CreateTexture(Width, Height, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &TheTextureManager->RenderedTexture, NULL);
-	TheTextureManager->SourceTexture->GetSurfaceLevel(0, &TheTextureManager->SourceSurface);
-	TheTextureManager->RenderedTexture->GetSurfaceLevel(0, &TheTextureManager->RenderedSurface);
 	Device->CreateTexture(Width, Height, 1, D3DUSAGE_DEPTHSTENCIL, (D3DFORMAT)MAKEFOURCC('I', 'N', 'T', 'Z'), D3DPOOL_DEFAULT, &TheTextureManager->DepthTexture, NULL);
 
 	for (int i = 0; i <= ShadowManager::ShadowMapTypeEnum::MapOrtho; i++) {
 		// create one texture per Exterior ShadowMap type
 		float multiple = i == ShadowManager::ShadowMapTypeEnum::MapLod ? 2.0f : 1.0f; // double the size of lod map only
 		ShadowMapSize = ShadowsExteriors->ShadowMapResolution * multiple;
-		
-		Device->CreateTexture(ShadowMapSize, ShadowMapSize, 1, D3DUSAGE_RENDERTARGET, D3DFMT_G32R32F, D3DPOOL_DEFAULT, &TheTextureManager->ShadowMapTexture[i], NULL);
-		TheTextureManager->ShadowMapTexture[i]->GetSurfaceLevel(0, &TheTextureManager->ShadowMapSurface[i]);
+		InitTexture(&TheTextureManager->ShadowMapTexture[i], &TheTextureManager->ShadowMapSurface[i], ShadowMapSize, ShadowMapSize, D3DFMT_G32R32F);
 		Device->CreateDepthStencilSurface(ShadowMapSize, ShadowMapSize, D3DFMT_D24S8, D3DMULTISAMPLE_NONE, 0, true, &TheTextureManager->ShadowMapDepthSurface[i], NULL);
-        if (i != TheShadowManager->ShadowMapTypeEnum::MapOrtho){ //Don't blur orthomap
-            // create a texture to receive the surface contents
-			Device->CreateTexture(ShadowMapSize, ShadowMapSize, 1, D3DUSAGE_RENDERTARGET, D3DFMT_G32R32F, D3DPOOL_DEFAULT, &TheTextureManager->ShadowMapTextureBlurred[i], NULL);
-            // set the surface level to the texture.
-			TheTextureManager->ShadowMapTextureBlurred[i]->GetSurfaceLevel(0, &TheTextureManager->ShadowMapSurfaceBlurred[i]);
-        }
+
+		// create textures to perform the blur
+		if (i != TheShadowManager->ShadowMapTypeEnum::MapOrtho) //Don't blur orthomap
+			InitTexture(&TheTextureManager->ShadowMapTextureBlurred[i], &TheTextureManager->ShadowMapSurfaceBlurred[i], ShadowMapSize, ShadowMapSize, D3DFMT_G32R32F);
     }
 	for (int i = 0; i < ShadowCubeMapsMax; i++) {
 		Device->CreateCubeTexture(ShadowCubeMapSize, 1, D3DUSAGE_RENDERTARGET, D3DFMT_R32F, D3DPOOL_DEFAULT, &TheTextureManager->ShadowCubeMapTexture[i], NULL);
@@ -136,14 +139,29 @@ void TextureManager::Initialize() {
 	}
 
 	Device->CreateDepthStencilSurface(ShadowCubeMapSize, ShadowCubeMapSize, D3DFMT_D24S8, D3DMULTISAMPLE_NONE, 0, true, &TheTextureManager->ShadowCubeMapDepthSurface, NULL);
+	timer.LogTime("TextureManager::Initialize");
+}
 
+/*
+* Creates a texture of the given size and format and binds a surface to it, so it can be used as render target.
+*/
+void TextureManager::InitTexture(IDirect3DTexture9** Texture, IDirect3DSurface9** Surface, int Width, int Height, D3DFORMAT Format) {
+	IDirect3DDevice9* Device = TheRenderManager->device;
+	*Texture = NULL;
+	*Surface = NULL;
+	// create a texture to receive the surface contents
+	Device->CreateTexture(Width, Height, 1, D3DUSAGE_RENDERTARGET, Format, D3DPOOL_DEFAULT, Texture, NULL);
+	// set the surface level to the texture.
+	IDirect3DTexture9* t = *Texture;
+	t->GetSurfaceLevel(0, Surface);
 }
 
 /*
 * Binds texture buffers to a given register name
 */
 TextureRecord* TextureManager::LoadTexture(ID3DXBuffer* ShaderSourceBuffer, D3DXPARAMETER_TYPE ConstantType, LPCSTR ConstantName, UINT ConstantIndex, bool* HasRenderedBuffer, bool* HasDepthBuffer) {
-	
+	auto timer = TimeLogger();
+
 	TextureRecord::TextureRecordType Type = TextureRecord::TextureRecordType::None;
 	std::string Source = std::string((const char*) ShaderSourceBuffer->GetBufferPointer());
 	std::string TexturePath;
@@ -153,15 +171,27 @@ TextureRecord* TextureManager::LoadTexture(ID3DXBuffer* ShaderSourceBuffer, D3DX
 	Type = !strcmp(ConstantName, "TESR_SourceBuffer") ? TextureRecord::TextureRecordType::SourceBuffer : Type;
 	Type = !strcmp(ConstantName, "TESR_RenderedBuffer") ? TextureRecord::TextureRecordType::RenderedBuffer : Type;
 	Type = !strcmp(ConstantName, "TESR_DepthBuffer") ? TextureRecord::TextureRecordType::DepthBuffer : Type;
+	Type = !strcmp(ConstantName, "TESR_NormalsBuffer") ? TextureRecord::TextureRecordType::NormalsBuffer : Type;
+	Type = !strcmp(ConstantName, "TESR_AvgLumaBuffer") ? TextureRecord::TextureRecordType::AvgLumaBuffer : Type;
 	Type = !strcmp(ConstantName, "TESR_ShadowMapBufferNear") ? TextureRecord::TextureRecordType::ShadowMapBufferNear : Type;
 	Type = !strcmp(ConstantName, "TESR_ShadowMapBufferMiddle") ? TextureRecord::TextureRecordType::ShadowMapBufferMiddle : Type;
 	Type = !strcmp(ConstantName, "TESR_ShadowMapBufferFar") ? TextureRecord::TextureRecordType::ShadowMapBufferFar : Type;
 	Type = !strcmp(ConstantName, "TESR_ShadowMapBufferLod") ? TextureRecord::TextureRecordType::ShadowMapBufferLod : Type;
+	Type = !strcmp(ConstantName, "TESR_PointShadowBuffer") ? TextureRecord::TextureRecordType::PointShadowBuffer : Type;
 	Type = !strcmp(ConstantName, "TESR_OrthoMapBuffer") ? TextureRecord::TextureRecordType::OrthoMapBuffer : Type;
 	Type = !strcmp(ConstantName, "TESR_ShadowCubeMapBuffer0") ? TextureRecord::TextureRecordType::ShadowCubeMapBuffer0 : Type;
 	Type = !strcmp(ConstantName, "TESR_ShadowCubeMapBuffer1") ? TextureRecord::TextureRecordType::ShadowCubeMapBuffer1 : Type;
 	Type = !strcmp(ConstantName, "TESR_ShadowCubeMapBuffer2") ? TextureRecord::TextureRecordType::ShadowCubeMapBuffer2 : Type;
 	Type = !strcmp(ConstantName, "TESR_ShadowCubeMapBuffer3") ? TextureRecord::TextureRecordType::ShadowCubeMapBuffer3 : Type;
+	Type = !strcmp(ConstantName, "TESR_ShadowCubeMapBuffer4") ? TextureRecord::TextureRecordType::ShadowCubeMapBuffer4 : Type;
+	Type = !strcmp(ConstantName, "TESR_ShadowCubeMapBuffer5") ? TextureRecord::TextureRecordType::ShadowCubeMapBuffer5 : Type;
+	Type = !strcmp(ConstantName, "TESR_ShadowCubeMapBuffer6") ? TextureRecord::TextureRecordType::ShadowCubeMapBuffer6 : Type;
+	Type = !strcmp(ConstantName, "TESR_ShadowCubeMapBuffer7") ? TextureRecord::TextureRecordType::ShadowCubeMapBuffer7 : Type;
+	Type = !strcmp(ConstantName, "TESR_ShadowCubeMapBuffer8") ? TextureRecord::TextureRecordType::ShadowCubeMapBuffer8 : Type;
+	Type = !strcmp(ConstantName, "TESR_ShadowCubeMapBuffer9") ? TextureRecord::TextureRecordType::ShadowCubeMapBuffer9 : Type;
+	Type = !strcmp(ConstantName, "TESR_ShadowCubeMapBuffer10") ? TextureRecord::TextureRecordType::ShadowCubeMapBuffer10 : Type;
+	Type = !strcmp(ConstantName, "TESR_ShadowCubeMapBuffer11") ? TextureRecord::TextureRecordType::ShadowCubeMapBuffer11 : Type;
+
 	Type = !strcmp(ConstantName, WordWaterHeightMapBuffer) ? TextureRecord::TextureRecordType::WaterHeightMapBuffer : Type;
 	Type = !strcmp(ConstantName, WordWaterReflectionMapBuffer) ? TextureRecord::TextureRecordType::WaterReflectionMapBuffer : Type;
 
@@ -178,7 +208,7 @@ TextureRecord* TextureManager::LoadTexture(ID3DXBuffer* ShaderSourceBuffer, D3DX
 			size_t StartTexture = Source.find("<", SamplerPos +1);
 			size_t EndTexture = Source.find(">", SamplerPos +1);
 			if(StartTexture == std::string::npos || EndTexture == std::string::npos) {
-				Logger::Log("[ERROR] %s  cannot be binded", ConstantName);
+				Logger::Log("[ERROR] %s cannot be binded", ConstantName);
 				return nullptr;
 			}
 			std::string TextureString = Source.substr(StartTexture +1, EndTexture - StartTexture - 1);
@@ -187,7 +217,7 @@ TextureRecord* TextureManager::LoadTexture(ID3DXBuffer* ShaderSourceBuffer, D3DX
 		size_t StartStatePos = Source.find("{", SamplerPos);
 		size_t EndStatePos = Source.find("}", SamplerPos);
 		if(EndStatePos == std::string::npos || StartStatePos == std::string::npos) {
-			Logger::Log("[ERROR] %s  cannot be binded", ConstantName);
+			Logger::Log("[ERROR] %s cannot be binded", ConstantName);
 			return nullptr;
 		}
 		std::string SamplerString = Source.substr(StartStatePos + 1, EndStatePos - StartStatePos - 1);
@@ -230,10 +260,13 @@ TextureRecord* TextureManager::LoadTexture(ID3DXBuffer* ShaderSourceBuffer, D3DX
                 Logger::Log("ERROR: Cannot bind texture %s", ConstantName);
             }
 		}
-
 		GetSamplerStates(SamplerString, NewTextureRecord);
+
+		timer.LogTime("TextureManager::LoadTexture");
+
 		return NewTextureRecord;
 	}
+
 	Logger::Log("[ERROR] Sampler %s doesn't have a valid type", ConstantName);
 	return nullptr;
 }

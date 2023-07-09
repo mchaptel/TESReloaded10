@@ -1,217 +1,219 @@
+#include <../lib/tomlplusplus/include/toml++/toml.h>
+
+/*
+* The Config Class holds, accesses and maintains the current instance of config document and its keys.
+*/
 void SettingManager::Configuration::Init() {
 
-	char Filename[MAX_PATH];
+	char TomlFilename[MAX_PATH];
+	char DefaultsFilename[MAX_PATH];
 
-	Config = NULL;
-	ConfigB = NULL;
-	FileSize = 0;
-	GetCurrentDirectoryA(MAX_PATH, Filename);
-	strcat(Filename, SettingsFile);
-	std::ifstream ConfigurationFile(Filename, std::ios::in | std::ios::binary | std::ios::ate);
-	if (ConfigurationFile.is_open()) {
-		std::streamoff Size = ConfigurationFile.tellg();
-		FileSize = Size + (Size / 3);
-		Config = new char[FileSize]; memset(Config, NULL, FileSize);
-		ConfigB = new char[FileSize]; memset(ConfigB, NULL, FileSize);
-		ConfigurationFile.seekg(0, std::ios::beg);
-		ConfigurationFile.read(Config, Size);
-		ConfigurationFile.close();
+	configLoaded = false;
+	GetCurrentDirectoryA(MAX_PATH, TomlFilename);
+	GetCurrentDirectoryA(MAX_PATH, DefaultsFilename);
+	strcat(TomlFilename, TomlSettingsFile);
+	strcat(DefaultsFilename, DefaultsSettingsFile);
+
+	Logger::Log("Loading settings from file %s", TomlFilename);
+	Logger::Log("Loading defaults from file %s", DefaultsFilename);
+
+	try {
+		DefaultConfig = toml::parse_file((std::string_view)DefaultsFilename);
+
+		// log config file contents
+		//std::stringstream buffer;
+		//buffer << DefaultConfig << std::endl;
+		//Logger::Log("%s", buffer.str().c_str());
+	}
+	catch (const std::exception& e) {
+		Logger::Log("error loading defaults toml: %s", e.what());
 	}
 
-}
+	try {
+		TomlConfig = toml::parse_file((std::string_view)TomlFilename);
 
-SettingManager::Configuration::SectionPosition SettingManager::Configuration::GoToSection(const char* Section, const char* FromPosition) {
+		//// log config file contents
+		//std::stringstream buffer;
+		//buffer << TomlConfig << std::endl;
+		//Logger::Log("%s", buffer.str().c_str());
 
-	SectionPosition SectionPosition = { NULL, NULL, true };
-	char* Finder = NULL;
-	char* KeyPositionR = NULL;
-	char SectionB[80];
-	char ToFind[80];
-	bool RootSection = (FromPosition ? false : true);
-
-	SectionPosition.Start = (char*)(FromPosition ? FromPosition : Config);
-	SectionPosition.End = SectionPosition.Start + strlen(Config);
-	if (Section) {
-		strcpy(SectionB, Section);
-		Finder = strtok(SectionB, ".");
-		while (Finder != NULL) {
-			strcpy(ToFind, "<");
-			if (RootSection) strcat(ToFind, "_");
-			strcat(ToFind, Finder);
-			strcat(ToFind, ">");
-			KeyPositionR = strstr(SectionPosition.Start, ToFind);
-			if (!KeyPositionR) {
-				SectionPosition.Found = false;
-				break;
-			}
-			KeyPositionR++;
-			SectionPosition.Start = KeyPositionR;
-			KeyPositionR = NULL;
-			strcpy(ToFind, "</");
-			if (RootSection) { strcat(ToFind, "_"); RootSection = false; }
-			strcat(ToFind, Finder);
-			strcat(ToFind, ">");
-			Finder = strtok(NULL, ".");
-		}
-		SectionPosition.End = strstr(SectionPosition.Start, ToFind);
 	}
-	return SectionPosition;
+	catch(const std::exception& e){
+		TomlConfig = toml::table();
+		Logger::Log("error loading toml: %s, new config will be created from defaults.", e.what());
+	}
 
+	configLoaded = true;
 }
 
+
+/*
+* Gets the value and type for the node based on section and key. If the section and key isn't found, value will be obtained from defaults.
+*/ 
 bool SettingManager::Configuration::FillNode(ConfigNode* Node, const char* Section, const char* Key) {
-
-	char ToFind[80];
-	char AttributeValue[80];
-	char* KeyPosition = NULL;
-	SectionPosition SectionPosition = GoToSection(Section);
-	bool Result = false;
 	
-	if (SectionPosition.Found) {
-		strcpy(ToFind, "<");
-		strcat(ToFind, Key);
-		strcat(ToFind, " ");
-		KeyPosition = strstr(SectionPosition.Start, ToFind);
-		if (KeyPosition && KeyPosition < SectionPosition.End) {
-			strcpy(Node->Section, Section);
-			strcpy(Node->Key, Key);
-			strcpy(Node->Value, GetAttribute(KeyPosition, "Value", AttributeValue));
-			Node->Type = atoi(GetAttribute(KeyPosition, "Type", AttributeValue));
-			Node->Reboot = atoi(GetAttribute(KeyPosition, "Reboot", AttributeValue));
-			Result = true;
-		}
+	std::string value; //at the moment settings are always stored as string. Should fix as it results in lots of conversions
+	char path[MAX_PATH] = "_";
+	strcat(path, Section);
+	strcat(path, ".");
+	strcat(path, Key);
+
+	auto setting = TomlConfig.at_path(path);
+	auto defaultSetting = DefaultConfig.at_path(path);
+	bool fromDefault = false;
+
+	//infer the type and convert the value to string, first from the settings, and if not found from the defaults.
+	if (setting.is_integer()) {
+		Node->Type = NodeType::Integer;
+		value = ToString<int>((int)**setting.as_integer());
 	}
-	return Result;
+	else if (setting.is_floating_point()) {
+		Node->Type = NodeType::Float;
+		value = ToString<float>((float)**setting.as_floating_point());
+	}
+	else if (setting.is_boolean()) {
+		Node->Type = NodeType::Boolean;
+		value = ToString<bool>((bool)**setting.as_boolean());
+	}
+	else if (setting.is_string()) {
+		Node->Type = NodeType::String;
+		value = *setting.value<std::string>();
+	}
+	else if (defaultSetting.is_integer()) {
+		Node->Type = NodeType::Integer;
+		value = ToString<int>((int)**defaultSetting.as_integer());
+		fromDefault = true;
+	}
+	else if (defaultSetting.is_floating_point()) {
+		Node->Type = NodeType::Float;
+		value = ToString<float>((float)**defaultSetting.as_floating_point());
+		fromDefault = true;
+	}
+	else if (defaultSetting.is_boolean()) {
+		Node->Type = NodeType::Boolean;
+		value = ToString<bool>((bool)**defaultSetting.as_boolean());
+		fromDefault = true;
+	}
+	else if (defaultSetting.is_string()) {
+		Node->Type = NodeType::String;
+		value = *defaultSetting.value<std::string>();
+		fromDefault = true;
+	}
+	else {
+		// Key was not included in defaults, ignore
+		return false;
+	}
 
+	// populate node fields
+	strcpy(Node->Section, Section);
+	strcpy(Node->Key, Key);
+	strcpy(Node->Value, value.c_str());
+	Node->Reboot = 0;
+
+	//Logger::Log("FillNode %s value: %s (from defaults? %i)", path, value.c_str(), fromDefault);
+
+	// write the value in case it was obtained from defaults
+	if (fromDefault) SetValue(Node);
+
+	return true;
 }
 
-char* SettingManager::Configuration::GetAttribute(char* KeyPosition, const char* Attribute, char* AttributeValue) {
-
-	char* AttributePositionStart = NULL;
-	char* AttributePositionEnd = NULL;
-	char ToFind[80];
-	size_t Size = 0;
-
-	strcpy(ToFind, Attribute);
-	strcat(ToFind, "=");
-	AttributePositionStart = strstr(KeyPosition, ToFind);
-	strcpy(ToFind, "\"");
-	AttributePositionStart = strstr(AttributePositionStart, ToFind);
-	AttributePositionStart++;
-	AttributePositionEnd = strstr(AttributePositionStart, ToFind);
-	Size = AttributePositionEnd - AttributePositionStart;
-	strncpy(AttributeValue, AttributePositionStart, Size);
-	AttributeValue[Size] = NULL;
-	return AttributeValue;
-
-}
-
+/*
+* Gathers the sub sections for a given parent section.
+*/
 void SettingManager::Configuration::FillSections(StringList* Sections, const char* ParentSection) {
 
-	SettingManager::Configuration::SectionPosition SectionPosition = GoToSection(ParentSection);
-	SettingManager::Configuration::SectionPosition InnerSectionPosition = SectionPosition;
-	char* SectionPositionStart = SectionPosition.Start;
-	char* SectionPositionEnd = NULL;
-	char ToFind[80];
-	char SectionName[80];
-	size_t Size = 0;
+	char path[256] = "_";
+	toml::v3::table* sectionsTable = NULL;
 
-	Sections->clear();
-	if (SectionPosition.Found) {
-		while (true) {
-			strcpy(ToFind, "<");
-			SectionPositionStart = strstr(SectionPositionStart, ToFind);
-			if (SectionPositionStart == NULL || SectionPositionStart == SectionPosition.End) break;
-			SectionPositionStart++;
-			strcpy(ToFind, ">");
-			SectionPositionEnd = strstr(SectionPositionStart, ToFind);
-			Size = SectionPositionEnd - SectionPositionStart;
-			strncpy(SectionName, SectionPositionStart, Size);
-			SectionName[Size] = NULL;
-			if (!memcmp(SectionPositionStart, "_", 1))
-				Sections->push_back(SectionName + 1);
-			else
-				Sections->push_back(SectionName);
-			InnerSectionPosition = GoToSection(SectionName, InnerSectionPosition.Start);
-			SectionPositionStart = InnerSectionPosition.End + 1;
-		}			
+	if (ParentSection == NULL) {
+		sectionsTable = &DefaultConfig;
+	}
+	else{
+		strcat(path, ParentSection); // add leading "_" TODO: Remove reliance on this leading "_"
+		auto section = DefaultConfig.at_path(path);
+		if (!section.is_table()) return; // table not found
 
-
-		std::sort(Sections->begin(), Sections->end());
+		sectionsTable = DefaultConfig.at_path(path).as_table();
 	}
 
+	// iterate through the found keys in the table and adds the results to the list
+	Sections->clear();
+	for (auto& [key, value] : *sectionsTable) {
+		const char* name = key.data();
+		if (!memcmp(name, "_", 1)) name = name + 1; //discard first "_"
+		Sections->push_back(name);
+	}
 }
 
+/*
+* Creates a list of settings node values from a given section
+*/
 void SettingManager::Configuration::FillSettings(SettingList* Nodes, const char* Section) {
 
-	Configuration::ConfigNode Node;
-	SettingManager::Configuration::SectionPosition SectionPosition = GoToSection(Section);
-	char* KeyPositionStart = SectionPosition.Start;
-	char* KeyPositionEnd = NULL;
-	char ToFind[80];
-	char KeyName[80];
-	size_t Size = 0;
+	char path[256] = "_";
+	strcat(path, Section);
+
+	auto settingsTable = DefaultConfig.at_path(path);
+	if (!settingsTable.is_table()) return; // table not found
 
 	Nodes->clear();
-	if (SectionPosition.Found) {
-		while (true) {
-			strcpy(ToFind, "<");
-			KeyPositionStart = strstr(KeyPositionStart, ToFind);
-			if (KeyPositionStart == NULL || KeyPositionStart == SectionPosition.End) break;
-			KeyPositionStart++;
-			strcpy(ToFind, " ");
-			KeyPositionEnd = strstr(KeyPositionStart, ToFind);
-			Size = KeyPositionEnd - KeyPositionStart;
-			strncpy(KeyName, KeyPositionStart, Size);
-			KeyName[Size] = NULL;
-			FillNode(&Node, Section, KeyName);
-			Nodes->push_back(Node);
-			strcpy(ToFind, "/>");
-			KeyPositionStart = strstr(KeyPositionStart, ToFind);
-		}
-		std::sort(Nodes->begin(), Nodes->end());
+	for (auto& [key, value] : *settingsTable.as_table()) {
+		ConfigNode Node;
+		FillNode(&Node, Section, key.data());
+		Nodes->push_back(Node);
 	}
-
 }
 
+/*
+* Add the changes described by the node to the config. Will create the entry in the config if it only exists in defaults
+*/
 void SettingManager::Configuration::SetValue(ConfigNode* Node) {
+	char path[256] = "_";
+	strcat(path, Node->Section);
 
-	char ToFind[80];
-	char* KeyPosition = NULL;
-	SettingManager::Configuration::SectionPosition SectionPosition = GoToSection(Node->Section);
-	
-	if (SectionPosition.Found) {
-		strcpy(ToFind, "<");
-		strcat(ToFind, Node->Key);
-		KeyPosition = strstr(SectionPosition.Start, ToFind);
-		SetAttribute(KeyPosition, "Value", Node->Value);
+	auto section = TomlConfig.at_path(path);
+	auto defaultSection = DefaultConfig.at_path(path);
+
+	if (!defaultSection.is_table()) return; // setting not in defaults, ignore
+
+	//setting values that don't exist in the config require building the section first.
+	if (!section.is_table()) {
+		// create the table
+		StringList tables;
+		SplitString(path, ".", &tables);
+		auto table = &TomlConfig;
+		for (auto address : tables) {
+			// create table if not found
+			if (!table->contains(address)) table->insert_or_assign(address, toml::v3::table());
+			table = table->at_path(address).as_table();
+		}
+		section = TomlConfig.at_path(path);
+	};
+
+	// setting value based on type
+	std::pair<toml::v3::table::iterator, bool> result;
+	if (Node->Type == NodeType::Integer) {
+		int value = atoi(Node->Value);
+		result = section.as_table()->insert_or_assign(Node->Key, value);
+	}else if (Node->Type == NodeType::Float) {
+		float value = atof(Node->Value);
+		result = section.as_table()->insert_or_assign(Node->Key, value);
+	}else if (Node->Type == NodeType::String) {
+		char* value = Node->Value;
+		result = section.as_table()->insert_or_assign(Node->Key, value);
 	}
-
+	else if (Node->Type == NodeType::Boolean) {
+		bool value = (bool)atoi(Node->Value);
+		result = section.as_table()->insert_or_assign(Node->Key, value);
+	}
 }
 
-void SettingManager::Configuration::SetAttribute(char* KeyPosition, const char* Attribute, const char* Value) {
-
-	char* AttributePositionStart = NULL;
-	char* AttributePositionEnd = NULL;
-	char ToFind[80];
-
-	strcpy(ToFind, Attribute);
-	strcat(ToFind, "=");
-	AttributePositionStart = strstr(KeyPosition, ToFind);
-	strcpy(ToFind, "\"");
-	AttributePositionStart = strstr(AttributePositionStart, ToFind);
-	AttributePositionStart++;
-	AttributePositionEnd = strstr(AttributePositionStart, ToFind);
-	strncpy(ConfigB, Config, AttributePositionStart - Config);
-	strcat(ConfigB, Value);
-	strncat(ConfigB, AttributePositionEnd, Config + strlen(Config) - AttributePositionEnd);
-	strcpy(Config, ConfigB);
-	memset(ConfigB, NULL, FileSize);
-
-}
 
 void SettingManager::Configuration::CreateWeatherSection(const char* WeatherName, TESWeather* Weather) {
+	// TODO: replace with toml
 
+	/*
 	char Section[4096];
 	char SectionNode[256];
 	char Value[80] = { NULL };
@@ -265,7 +267,7 @@ void SettingManager::Configuration::CreateWeatherSection(const char* WeatherName
 		strncat(ConfigB, SectionPosition.End, Config + strlen(Config) - SectionPosition.End);
 		strcpy(Config, ConfigB);
 		memset(ConfigB, NULL, FileSize);
-	}
+	}*/
 
 }
 
@@ -280,6 +282,8 @@ void SettingManager::Initialize() {
 
 void SettingManager::LoadSettings() {
 
+	auto timer = TimeLogger();
+
 	StringList List;
 	StringList InnerList;
 	SettingsWaterStruct SW{};
@@ -287,15 +291,18 @@ void SettingManager::LoadSettings() {
 	SettingsWeatherStruct SE{};
 	char Value[80];
 
-	if (!Config.Config) Config.Init();
+	if (!Config.configLoaded) Config.Init();
+
 	SettingsMain.Main.RemoveUnderwater = GetSettingI("Main.Main.Water", "RemoveUnderwater");
 	SettingsMain.Main.RemovePrecipitations = GetSettingI("Main.Main.Precipitations", "RemovePrecipitations");
+	SettingsMain.Main.ForceReflections = GetSettingI("Main.Main.Water", "ForceReflections");
 	SettingsMain.Main.MemoryHeapManagement = GetSettingI("Main.Main.Memory", "HeapManagement");
 	SettingsMain.Main.MemoryTextureManagement = GetSettingI("Main.Main.Memory", "TextureManagement");
 	SettingsMain.Main.AnisotropicFilter = GetSettingI("Main.Main.Misc", "AnisotropicFilter");
 	SettingsMain.Main.FarPlaneDistance = GetSettingF("Main.Main.Misc", "FarPlaneDistance");
 	SettingsMain.Main.ScreenshotKey = GetSettingI("Main.Main.Misc", "ScreenshotKey");
 	SettingsMain.Main.ReplaceIntro = GetSettingI("Main.Main.Misc", "ReplaceIntro");
+	SettingsMain.Main.ForceMSAA = GetSettingI("Main.Main.Misc", "ForceMSAA");
 	SettingsMain.Main.SkipFog = GetSettingI("Main.Main.Misc", "SkipFog");
 
 	SettingsMain.FrameRate.SmartControl = GetSettingI("Main.FrameRate.SmartControl", "SmartControl");
@@ -385,7 +392,6 @@ void SettingManager::LoadSettings() {
 	SettingsMain.EquipmentMode.TorchOnBeltRot.y = GetSettingF("Main.EquipmentMode.Positioning", "TorchOnBeltRotY");
 	SettingsMain.EquipmentMode.TorchOnBeltRot.z = GetSettingF("Main.EquipmentMode.Positioning", "TorchOnBeltRotZ");
 
-
 	SettingsMain.MountedCombat.Enabled = GetSettingI("Main.MountedCombat.Main", "Enabled");
 	SettingsMain.MountedCombat.WeaponOnBackPos.x = GetSettingF("Main.MountedCombat.Positioning", "WeaponOnBackPosX");
 	SettingsMain.MountedCombat.WeaponOnBackPos.y = GetSettingF("Main.MountedCombat.Positioning", "WeaponOnBackPosY");
@@ -430,38 +436,6 @@ void SettingManager::LoadSettings() {
 
 	SettingsMain.ShadowMode.NearQuality = GetSettingF("Main.ShadowMode.Main", "NearQuality");
 
-	SettingsMain.Shaders.Water = GetSettingI("Shaders.Water.Status", "Enabled");
-	SettingsMain.Shaders.Grass = GetSettingI("Shaders.Grass.Status", "Enabled");
-	SettingsMain.Shaders.HDR = GetSettingI("Shaders.HDR.Status", "Enabled");
-	SettingsMain.Shaders.POM = GetSettingI("Shaders.POM.Status", "Enabled");
-	SettingsMain.Shaders.Skin = GetSettingI("Shaders.Skin.Status", "Enabled");
-	SettingsMain.Shaders.Terrain = GetSettingI("Shaders.Terrain.Status", "Enabled");
-	SettingsMain.Shaders.Blood = GetSettingI("Shaders.Blood.Status", "Enabled");
-	SettingsMain.Shaders.NightEye = GetSettingI("Shaders.NightEye.Status", "Enabled");
-	SettingsMain.Shaders.Extra = GetSettingI("Shaders.ExtraShaders.Status", "Enabled");
-
-	SettingsMain.Effects.AmbientOcclusion = GetSettingI("Shaders.AmbientOcclusion.Status", "Enabled");
-	SettingsMain.Effects.Underwater = GetSettingI("Shaders.Underwater.Status", "Enabled");
-	SettingsMain.Effects.WaterLens = GetSettingI("Shaders.WaterLens.Status", "Enabled");
-	SettingsMain.Effects.GodRays = GetSettingI("Shaders.GodRays.Status", "Enabled");
-	SettingsMain.Effects.DepthOfField = GetSettingI("Shaders.DepthOfField.Status", "Enabled");
-	SettingsMain.Effects.Coloring = GetSettingI("Shaders.Coloring.Status", "Enabled");
-	SettingsMain.Effects.Cinema = GetSettingI("Shaders.Cinema.Status", "Enabled");
-	SettingsMain.Effects.Bloom = GetSettingI("Shaders.Bloom.Status", "Enabled");
-	SettingsMain.Effects.SnowAccumulation = GetSettingI("Shaders.SnowAccumulation.Status", "Enabled");
-	SettingsMain.Effects.BloodLens = GetSettingI("Shaders.BloodLens.Status", "Enabled");
-	SettingsMain.Effects.MotionBlur = GetSettingI("Shaders.MotionBlur.Status", "Enabled");
-	SettingsMain.Effects.LowHF = GetSettingI("Shaders.LowHF.Status", "Enabled");
-	SettingsMain.Effects.WetWorld = GetSettingI("Shaders.WetWorld.Status", "Enabled");
-	SettingsMain.Effects.Sharpening = GetSettingI("Shaders.Sharpening.Status", "Enabled");
-	SettingsMain.Effects.VolumetricFog = GetSettingI("Shaders.VolumetricFog.Status", "Enabled");
-	SettingsMain.Effects.Rain = GetSettingI("Shaders.Precipitations.Status", "Enabled");
-	SettingsMain.Effects.Snow = GetSettingI("Shaders.Precipitations.Status", "Enabled"); //TODO change in the INI
-	SettingsMain.Effects.ShadowsExteriors = GetSettingI("Shaders.ShadowsExteriors.Status", "PostProcess");
-	SettingsMain.Effects.ShadowsInteriors = GetSettingI("Shaders.ShadowsInteriors.Status", "PostProcess");
-	SettingsMain.Effects.Specular = GetSettingI("Shaders.Specular.Status", "Enabled");
-	SettingsMain.Effects.Extra = GetSettingI("Shaders.ExtraEffects.Status", "Enabled");
-
 	strcpy(SettingsMain.Menu.TextFont, GetSettingS("Main.Menu.Style", "TextFont", Value));
 	SettingsMain.Menu.TextSize = GetSettingI("Main.Menu.Style", "TextSize");
 	strcpy(SettingsMain.Menu.TextFontStatus, GetSettingS("Main.Menu.Style", "TextFontStatus", Value));
@@ -493,11 +467,6 @@ void SettingManager::LoadSettings() {
 	SettingsMain.Menu.KeySave = GetSettingI("Main.Menu.Keys", "KeySave");
 	SettingsMain.Menu.KeyEditing = GetSettingI("Main.Menu.Keys", "KeyEditing");
 
-	SettingsMain.LowHFSound.HealthEnabled = GetSettingI("Main.LowHFSound.Main", "HealthEnabled");
-	SettingsMain.LowHFSound.FatigueEnabled = GetSettingI("Main.LowHFSound.Main", "FatigueEnabled");
-	SettingsMain.LowHFSound.HealthCoeff = GetSettingF("Main.LowHFSound.Main", "HealthCoeff");
-	SettingsMain.LowHFSound.FatigueCoeff = GetSettingF("Main.LowHFSound.Main", "FatigueCoeff");
-
 	SettingsMain.Purger.Enabled = GetSettingI("Main.Purger.Main", "Enabled");
 	SettingsMain.Purger.Time = GetSettingI("Main.Purger.Main", "Time");
 	SettingsMain.Purger.PurgeTextures = GetSettingI("Main.Purger.Main", "PurgeTextures");
@@ -524,7 +493,7 @@ void SettingManager::LoadSettings() {
 	SettingsMain.Develop.TraceShaders = GetSettingI("Main.Develop.Main", "TraceShaders");
 
 
-	Config.FillSections(&List, "Weathers");
+	Config.FillSections(&List, "Weathers"); // get the list of weathers
 	for (StringList::iterator Iter = List.begin(); Iter != List.end(); ++Iter) {
 		const char* WeatherSection = Iter->c_str();
 		char SectionName[80];
@@ -565,60 +534,7 @@ void SettingManager::LoadSettings() {
 		SettingsWeather[WeatherSection] = SE;
 	}
 
-
-	SettingsAmbientOcclusionExteriors.Enabled = GetSettingI("Shaders.AmbientOcclusion.Exteriors", "Enabled");
-	SettingsAmbientOcclusionExteriors.Samples = GetSettingF("Shaders.AmbientOcclusion.Exteriors", "Samples");
-	SettingsAmbientOcclusionExteriors.StrengthMultiplier = GetSettingF("Shaders.AmbientOcclusion.Exteriors", "StrengthMultiplier");
-	SettingsAmbientOcclusionExteriors.ClampStrength = GetSettingF("Shaders.AmbientOcclusion.Exteriors", "ClampStrength");
-	SettingsAmbientOcclusionExteriors.AngleBias = GetSettingF("Shaders.AmbientOcclusion.Exteriors", "AngleBias");
-	SettingsAmbientOcclusionExteriors.Range = GetSettingF("Shaders.AmbientOcclusion.Exteriors", "Range");
-	SettingsAmbientOcclusionExteriors.LumThreshold = GetSettingF("Shaders.AmbientOcclusion.Exteriors", "LumThreshold");
-	SettingsAmbientOcclusionExteriors.BlurDropThreshold = GetSettingF("Shaders.AmbientOcclusion.Exteriors", "BlurDropThreshold");
-	SettingsAmbientOcclusionExteriors.BlurRadiusMultiplier = GetSettingF("Shaders.AmbientOcclusion.Exteriors", "BlurRadiusMultiplier");
-
-	SettingsAmbientOcclusionInteriors.Enabled = GetSettingI("Shaders.AmbientOcclusion.Interiors", "Enabled");
-	SettingsAmbientOcclusionInteriors.Samples = GetSettingF("Shaders.AmbientOcclusion.Interiors", "Samples");
-	SettingsAmbientOcclusionInteriors.StrengthMultiplier = GetSettingF("Shaders.AmbientOcclusion.Interiors", "StrengthMultiplier");
-	SettingsAmbientOcclusionInteriors.ClampStrength = GetSettingF("Shaders.AmbientOcclusion.Interiors", "ClampStrength");
-	SettingsAmbientOcclusionInteriors.AngleBias = GetSettingF("Shaders.AmbientOcclusion.Interiors", "AngleBias");
-	SettingsAmbientOcclusionInteriors.Range = GetSettingF("Shaders.AmbientOcclusion.Interiors", "Range");
-	SettingsAmbientOcclusionInteriors.LumThreshold = GetSettingF("Shaders.AmbientOcclusion.Interiors", "LumThreshold");
-	SettingsAmbientOcclusionInteriors.BlurDropThreshold = GetSettingF("Shaders.AmbientOcclusion.Interiors", "BlurDropThreshold");
-	SettingsAmbientOcclusionInteriors.BlurRadiusMultiplier = GetSettingF("Shaders.AmbientOcclusion.Interiors", "BlurRadiusMultiplier");
-
-
-	SettingsBloodLens.Chance = GetSettingF("Shaders.BloodLens.Main", "Chance");
-	SettingsBloodLens.ColorR = GetSettingF("Shaders.BloodLens.Main", "ColorR");
-	SettingsBloodLens.ColorG = GetSettingF("Shaders.BloodLens.Main", "ColorG");
-	SettingsBloodLens.ColorB = GetSettingF("Shaders.BloodLens.Main", "ColorB");
-	SettingsBloodLens.Intensity = GetSettingF("Shaders.BloodLens.Main", "Intensity");
-	SettingsBloodLens.Time = GetSettingF("Shaders.BloodLens.Main", "Time");
-
-
-	SettingsBloomExteriors.BloomIntensity = GetSettingF("Shaders.Bloom.Exteriors", "BloomIntensity");
-	SettingsBloomExteriors.OriginalIntensity = GetSettingF("Shaders.Bloom.Exteriors", "OriginalIntensity");
-	SettingsBloomExteriors.BloomSaturation = GetSettingF("Shaders.Bloom.Exteriors", "BloomSaturation");
-	SettingsBloomExteriors.OriginalSaturation = GetSettingF("Shaders.Bloom.Exteriors", "OriginalSaturation");
-	SettingsBloomExteriors.Luminance = GetSettingF("Shaders.Bloom.Exteriors", "Luminance");
-	SettingsBloomExteriors.MiddleGray = GetSettingF("Shaders.Bloom.Exteriors", "MiddleGray");
-	SettingsBloomExteriors.WhiteCutOff = GetSettingF("Shaders.Bloom.Exteriors", "WhiteCutOff");
-
-	SettingsBloomInteriors.BloomIntensity = GetSettingF("Shaders.Bloom.Interiors", "BloomIntensity");
-	SettingsBloomInteriors.OriginalIntensity = GetSettingF("Shaders.Bloom.Interiors", "OriginalIntensity");
-	SettingsBloomInteriors.BloomSaturation = GetSettingF("Shaders.Bloom.Interiors", "BloomSaturation");
-	SettingsBloomInteriors.OriginalSaturation = GetSettingF("Shaders.Bloom.Interiors", "OriginalSaturation");
-	SettingsBloomInteriors.Luminance = GetSettingF("Shaders.Bloom.Interiors", "Luminance");
-	SettingsBloomInteriors.MiddleGray = GetSettingF("Shaders.Bloom.Interiors", "MiddleGray");
-	SettingsBloomInteriors.WhiteCutOff = GetSettingF("Shaders.Bloom.Interiors", "WhiteCutOff");
-
-
-	SettingsCinema.Mode = GetSettingI("Shaders.Cinema.Main", "Mode");
-	SettingsCinema.AspectRatio = GetSettingF("Shaders.Cinema.Main", "AspectRatio");
-	SettingsCinema.VignetteRadius = GetSettingF("Shaders.Cinema.Main", "VignetteRadius");
-	SettingsCinema.VignetteDarkness = GetSettingF("Shaders.Cinema.Main", "VignetteDarkness");
-
-
-	Config.FillSections(&List, "Shaders.Coloring");
+	Config.FillSections(&List, "Shaders.Coloring"); // get the list of coloring sections
 	for (StringList::iterator Iter = List.begin(); Iter != List.end(); ++Iter) {
 		const char* ColoringSection = Iter->c_str();
 		if (strcmp(ColoringSection, "Status")) {
@@ -645,128 +561,6 @@ void SettingManager::LoadSettings() {
 		}
 	}
 
-
-	SettingsDepthOfFieldFirstPersonView.Enabled = GetSettingI("Shaders.DepthOfField.FirstPersonView", "Enabled");
-	SettingsDepthOfFieldFirstPersonView.Mode = GetSettingI("Shaders.DepthOfField.FirstPersonView", "Mode");
-	SettingsDepthOfFieldFirstPersonView.DistantBlur = GetSettingI("Shaders.DepthOfField.FirstPersonView", "DistantBlur");
-	SettingsDepthOfFieldFirstPersonView.DistantBlurStartRange = GetSettingF("Shaders.DepthOfField.FirstPersonView", "DistantBlurStartRange");
-	SettingsDepthOfFieldFirstPersonView.DistantBlurEndRange = GetSettingF("Shaders.DepthOfField.FirstPersonView", "DistantBlurEndRange");
-	SettingsDepthOfFieldFirstPersonView.BaseBlurRadius = GetSettingF("Shaders.DepthOfField.FirstPersonView", "BaseBlurRadius");
-	SettingsDepthOfFieldFirstPersonView.BlurFallOff = GetSettingF("Shaders.DepthOfField.FirstPersonView", "BlurFallOff");
-	SettingsDepthOfFieldFirstPersonView.Radius = GetSettingF("Shaders.DepthOfField.FirstPersonView", "Radius");
-	SettingsDepthOfFieldFirstPersonView.DiameterRange = GetSettingF("Shaders.DepthOfField.FirstPersonView", "DiameterRange");
-	SettingsDepthOfFieldFirstPersonView.NearBlurCutOff = GetSettingF("Shaders.DepthOfField.FirstPersonView", "NearBlurCutOff");
-
-	SettingsDepthOfFieldThirdPersonView.Enabled = GetSettingI("Shaders.DepthOfField.ThirdPersonView", "Enabled");
-	SettingsDepthOfFieldThirdPersonView.Mode = GetSettingI("Shaders.DepthOfField.ThirdPersonView", "Mode");
-	SettingsDepthOfFieldThirdPersonView.DistantBlur = GetSettingI("Shaders.DepthOfField.ThirdPersonView", "DistantBlur");
-	SettingsDepthOfFieldThirdPersonView.DistantBlurStartRange = GetSettingF("Shaders.DepthOfField.ThirdPersonView", "DistantBlurStartRange");
-	SettingsDepthOfFieldThirdPersonView.DistantBlurEndRange = GetSettingF("Shaders.DepthOfField.ThirdPersonView", "DistantBlurEndRange");
-	SettingsDepthOfFieldThirdPersonView.BaseBlurRadius = GetSettingF("Shaders.DepthOfField.ThirdPersonView", "BaseBlurRadius");
-	SettingsDepthOfFieldThirdPersonView.BlurFallOff = GetSettingF("Shaders.DepthOfField.ThirdPersonView", "BlurFallOff");
-	SettingsDepthOfFieldThirdPersonView.Radius = GetSettingF("Shaders.DepthOfField.ThirdPersonView", "Radius");
-	SettingsDepthOfFieldThirdPersonView.DiameterRange = GetSettingF("Shaders.DepthOfField.ThirdPersonView", "DiameterRange");
-	SettingsDepthOfFieldThirdPersonView.NearBlurCutOff = GetSettingF("Shaders.DepthOfField.ThirdPersonView", "NearBlurCutOff");
-
-	SettingsDepthOfFieldVanityView.Enabled = GetSettingI("Shaders.DepthOfField.VanityView", "Enabled");
-	SettingsDepthOfFieldVanityView.Mode = GetSettingI("Shaders.DepthOfField.VanityView", "Mode");
-	SettingsDepthOfFieldVanityView.DistantBlur = GetSettingI("Shaders.DepthOfField.VanityView", "DistantBlur");
-	SettingsDepthOfFieldVanityView.DistantBlurStartRange = GetSettingF("Shaders.DepthOfField.VanityView", "DistantBlurStartRange");
-	SettingsDepthOfFieldVanityView.DistantBlurEndRange = GetSettingF("Shaders.DepthOfField.VanityView", "DistantBlurEndRange");
-	SettingsDepthOfFieldVanityView.BaseBlurRadius = GetSettingF("Shaders.DepthOfField.VanityView", "BaseBlurRadius");
-	SettingsDepthOfFieldVanityView.BlurFallOff = GetSettingF("Shaders.DepthOfField.VanityView", "BlurFallOff");
-	SettingsDepthOfFieldVanityView.Radius = GetSettingF("Shaders.DepthOfField.VanityView", "Radius");
-	SettingsDepthOfFieldVanityView.DiameterRange = GetSettingF("Shaders.DepthOfField.VanityView", "DiameterRange");
-	SettingsDepthOfFieldVanityView.NearBlurCutOff = GetSettingF("Shaders.DepthOfField.VanityView", "NearBlurCutOff");
-
-
-	SettingsGodRays.TimeEnabled = GetSettingI("Shaders.GodRays.Main", "TimeEnabled");
-	SettingsGodRays.SunGlareEnabled = GetSettingI("Shaders.GodRays.Main", "SunGlareEnabled");
-	SettingsGodRays.LightShaftPasses = GetSettingI("Shaders.GodRays.Main", "LightShaftPasses");
-	SettingsGodRays.RayIntensity = GetSettingF("Shaders.GodRays.Main", "RayIntensity");
-	SettingsGodRays.RayLength = GetSettingF("Shaders.GodRays.Main", "RayLength");
-	SettingsGodRays.RayDensity = GetSettingF("Shaders.GodRays.Main", "RayDensity");
-	SettingsGodRays.RayVisibility = GetSettingF("Shaders.GodRays.Main", "RayVisibility");
-	SettingsGodRays.Luminance = GetSettingF("Shaders.GodRays.Main", "Luminance");
-	SettingsGodRays.GlobalMultiplier = GetSettingF("Shaders.GodRays.Main", "GlobalMultiplier");
-	SettingsGodRays.RayR = GetSettingF("Shaders.GodRays.Main", "RayR");
-	SettingsGodRays.RayG = GetSettingF("Shaders.GodRays.Main", "RayG");
-	SettingsGodRays.RayB = GetSettingF("Shaders.GodRays.Main", "RayB");
-	SettingsGodRays.Saturate = GetSettingF("Shaders.GodRays.Main", "Saturate");
-
-
-	SettingsGrass.WindEnabled = GetSettingI("Shaders.Grass.Main", "WindEnabled");
-	SettingsGrass.GrassDensity = GetSettingI("Shaders.Grass.Main", "GrassDensity");
-	SettingsGrass.WindCoefficient = GetSettingF("Shaders.Grass.Main", "WindCoefficient");
-	SettingsGrass.ScaleX = GetSettingF("Shaders.Grass.Main", "ScaleX");
-	SettingsGrass.ScaleY = GetSettingF("Shaders.Grass.Main", "ScaleY");
-	SettingsGrass.ScaleZ = GetSettingF("Shaders.Grass.Main", "ScaleZ");
-	SettingsGrass.MinDistance = GetSettingF("Shaders.Grass.Main", "MinDistance");
-	SettingsGrass.MaxDistance = GetSettingF("Shaders.Grass.Main", "MaxDistance");
-
-
-	SettingsHDR.ToneMapping = GetSettingF("Shaders.HDR.Main", "ToneMapping");
-	SettingsHDR.ToneMappingBlur = GetSettingF("Shaders.HDR.Main", "ToneMappingBlur");
-	SettingsHDR.ToneMappingColor = GetSettingF("Shaders.HDR.Main", "ToneMappingColor");
-	SettingsHDR.Linearization = GetSettingF("Shaders.HDR.Main", "Linearization");
-
-
-	SettingsLowHF.HealthLimit = GetSettingF("Shaders.LowHF.Main", "HealthLimit");
-	SettingsLowHF.FatigueLimit = GetSettingF("Shaders.LowHF.Main", "FatigueLimit");
-	SettingsLowHF.LumaMultiplier = GetSettingF("Shaders.LowHF.Main", "LumaMultiplier");
-	SettingsLowHF.BlurMultiplier = GetSettingF("Shaders.LowHF.Main", "BlurMultiplier");
-	SettingsLowHF.VignetteMultiplier = GetSettingF("Shaders.LowHF.Main", "VignetteMultiplier");
-	SettingsLowHF.DarknessMultiplier = GetSettingF("Shaders.LowHF.Main", "DarknessMultiplier");
-
-
-	SettingsMotionBlurFirstPersonView.Enabled = GetSettingI("Shaders.MotionBlur.FirstPersonView", "Enabled");
-	SettingsMotionBlurFirstPersonView.GaussianWeight = GetSettingF("Shaders.MotionBlur.FirstPersonView", "GaussianWeight");
-	SettingsMotionBlurFirstPersonView.BlurScale = GetSettingF("Shaders.MotionBlur.FirstPersonView", "BlurScale");
-	SettingsMotionBlurFirstPersonView.BlurOffsetMax = GetSettingF("Shaders.MotionBlur.FirstPersonView", "BlurOffsetMax");
-	SettingsMotionBlurFirstPersonView.BlurCutOff = GetSettingF("Shaders.MotionBlur.FirstPersonView", "BlurCutOff");
-
-	SettingsMotionBlurThirdPersonView.Enabled = GetSettingI("Shaders.MotionBlur.ThirdPersonView", "Enabled");
-	SettingsMotionBlurThirdPersonView.GaussianWeight = GetSettingF("Shaders.MotionBlur.ThirdPersonView", "GaussianWeight");
-	SettingsMotionBlurThirdPersonView.BlurScale = GetSettingF("Shaders.MotionBlur.ThirdPersonView", "BlurScale");
-	SettingsMotionBlurThirdPersonView.BlurOffsetMax = GetSettingF("Shaders.MotionBlur.ThirdPersonView", "BlurOffsetMax");
-	SettingsMotionBlurThirdPersonView.BlurCutOff = GetSettingF("Shaders.MotionBlur.ThirdPersonView", "BlurCutOff");
-
-
-	SettingsPOM.HeightMapScale = GetSettingF("Shaders.POM.Main", "HeightMapScale");
-	SettingsPOM.MinSamples = GetSettingF("Shaders.POM.Main", "MinSamples");
-	SettingsPOM.MaxSamples = GetSettingF("Shaders.POM.Main", "MaxSamples");
-
-
-	SettingsPrecipitations.Rain.DepthStep = GetSettingF("Shaders.Rain.Main", "DepthStep");
-	SettingsPrecipitations.Rain.Speed = GetSettingF("Shaders.Rain.Main", "Speed");
-	SettingsPrecipitations.Snow.DepthStep = GetSettingF("Shaders.Snow.Main", "DepthStep");
-	SettingsPrecipitations.Snow.Flakes = GetSettingF("Shaders.Snow.Main", "Flakes");
-	SettingsPrecipitations.Snow.Speed = GetSettingF("Shaders.Snow.Main", "Speed");
-	SettingsPrecipitations.WetWorld.Amount = GetSettingF("Shaders.Precipitations.WetWorld", "Amount");
-	SettingsPrecipitations.WetWorld.Increase = GetSettingF("Shaders.Precipitations.WetWorld", "Increase");
-	SettingsPrecipitations.WetWorld.Decrease = GetSettingF("Shaders.Precipitations.WetWorld", "Decrease");
-	SettingsPrecipitations.WetWorld.PuddleCoeff_R = GetSettingF("Shaders.Precipitations.WetWorld", "PuddleCoeff_R");
-	SettingsPrecipitations.WetWorld.PuddleCoeff_G = GetSettingF("Shaders.Precipitations.WetWorld", "PuddleCoeff_G");
-	SettingsPrecipitations.WetWorld.PuddleCoeff_B = GetSettingF("Shaders.Precipitations.WetWorld", "PuddleCoeff_B");
-	SettingsPrecipitations.WetWorld.PuddleSpecularMultiplier = GetSettingF("Shaders.Precipitations.WetWorld", "PuddleSpecularMultiplier");
-	SettingsPrecipitations.SnowAccumulation.Amount = GetSettingF("Shaders.Precipitations.SnowAccumulation", "Amount");
-	SettingsPrecipitations.SnowAccumulation.Increase = GetSettingF("Shaders.Precipitations.SnowAccumulation", "Increase");
-	SettingsPrecipitations.SnowAccumulation.Decrease = GetSettingF("Shaders.Precipitations.SnowAccumulation", "Decrease");
-	SettingsPrecipitations.SnowAccumulation.SunPower = GetSettingF("Shaders.Precipitations.SnowAccumulation", "SunPower");
-	SettingsPrecipitations.SnowAccumulation.BlurNormDropThreshhold = GetSettingF("Shaders.Precipitations.SnowAccumulation", "BlurNormDropThreshhold");
-	SettingsPrecipitations.SnowAccumulation.BlurRadiusMultiplier = GetSettingF("Shaders.Precipitations.SnowAccumulation", "BlurRadiusMultiplier");
-
-	// Specular effect settings
-	SettingsSpecular.Exterior.Strength = GetSettingF("Shaders.Specular.Exterior", "Strength");
-	SettingsSpecular.Exterior.BlurMultiplier = GetSettingF("Shaders.Specular.Exterior", "BlurMultiplier");
-	SettingsSpecular.Exterior.Glossiness = GetSettingF("Shaders.Specular.Exterior", "Glossiness");
-	SettingsSpecular.Exterior.DistanceFade = GetSettingF("Shaders.Specular.Exterior", "DistanceFade");
-
-	SettingsSpecular.Rain.Strength = GetSettingF("Shaders.Specular.Rain", "Strength");
-	SettingsSpecular.Rain.BlurMultiplier = GetSettingF("Shaders.Specular.Rain", "BlurMultiplier");
-	SettingsSpecular.Rain.Glossiness = GetSettingF("Shaders.Specular.Rain", "Glossiness");
-	SettingsSpecular.Rain.DistanceFade = GetSettingF("Shaders.Specular.Rain", "DistanceFade");
-
 	// Generic exterior shadows settings
 	SettingsShadows.Exteriors.Enabled = GetSettingI("Shaders.ShadowsExteriors.Main", "Enabled");
 	SettingsShadows.Exteriors.Quality = GetSettingI("Shaders.ShadowsExteriors.Main", "Quality");
@@ -777,79 +571,49 @@ void SettingManager::LoadSettings() {
 	SettingsShadows.Exteriors.ShadowMapFarPlane = GetSettingF("Shaders.ShadowsExteriors.Main", "ShadowMapFarPlane");
 	SettingsShadows.Exteriors.ShadowMode = GetSettingI("Shaders.ShadowsExteriors.Main", "ShadowMode");
 	SettingsShadows.Exteriors.BlurShadowMaps = GetSettingI("Shaders.ShadowsExteriors.Main", "BlurShadowMaps");
+	SettingsShadows.Exteriors.UsePointShadows = GetSettingI("Shaders.ShadowsExteriors.Main", "UsePointShadows");
 
-	SettingsShadows.Exteriors.AlphaEnabled[ShadowManager::ShadowMapTypeEnum::MapNear] = GetSettingI("Shaders.ShadowsExteriors.Near", "AlphaEnabled");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapNear].Activators = GetSettingI("Shaders.ShadowsExteriors.Near", "Activators");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapNear].Actors = GetSettingI("Shaders.ShadowsExteriors.Near", "Actors");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapNear].Apparatus = GetSettingI("Shaders.ShadowsExteriors.Near", "Apparatus");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapNear].Books = GetSettingI("Shaders.ShadowsExteriors.Near", "Books");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapNear].Containers = GetSettingI("Shaders.ShadowsExteriors.Near", "Containers");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapNear].Doors = GetSettingI("Shaders.ShadowsExteriors.Near", "Doors");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapNear].Furniture = GetSettingI("Shaders.ShadowsExteriors.Near", "Furniture");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapNear].Misc = GetSettingI("Shaders.ShadowsExteriors.Near", "Misc");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapNear].Statics = GetSettingI("Shaders.ShadowsExteriors.Near", "Statics");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapNear].Terrain = GetSettingI("Shaders.ShadowsExteriors.Near", "Terrain");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapNear].Trees = GetSettingI("Shaders.ShadowsExteriors.Near", "Trees");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapNear].Lod = GetSettingI("Shaders.ShadowsExteriors.Near", "Lod");
+	SettingsShadows.ScreenSpace.Enabled = GetSettingI("Shaders.ShadowsExteriors.ScreenSpace", "Enabled");
+	SettingsShadows.ScreenSpace.BlurRadius = GetSettingI("Shaders.ShadowsExteriors.ScreenSpace", "BlurRadius");
+	SettingsShadows.ScreenSpace.RenderDistance = GetSettingI("Shaders.ShadowsExteriors.ScreenSpace", "RenderDistance");
 
-	SettingsShadows.Exteriors.AlphaEnabled[ShadowManager::ShadowMapTypeEnum::MapMiddle] = GetSettingI("Shaders.ShadowsExteriors.Middle", "AlphaEnabled");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapMiddle].Activators = GetSettingI("Shaders.ShadowsExteriors.Middle", "Activators");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapMiddle].Actors = GetSettingI("Shaders.ShadowsExteriors.Middle", "Actors");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapMiddle].Apparatus = GetSettingI("Shaders.ShadowsExteriors.Middle", "Apparatus");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapMiddle].Books = GetSettingI("Shaders.ShadowsExteriors.Middle", "Books");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapMiddle].Containers = GetSettingI("Shaders.ShadowsExteriors.Middle", "Containers");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapMiddle].Doors = GetSettingI("Shaders.ShadowsExteriors.Middle", "Doors");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapMiddle].Furniture = GetSettingI("Shaders.ShadowsExteriors.Middle", "Furniture");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapMiddle].Misc = GetSettingI("Shaders.ShadowsExteriors.Middle", "Misc");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapMiddle].Statics = GetSettingI("Shaders.ShadowsExteriors.Middle", "Statics");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapMiddle].Terrain = GetSettingI("Shaders.ShadowsExteriors.Middle", "Terrain");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapMiddle].Trees = GetSettingI("Shaders.ShadowsExteriors.Middle", "Trees");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapMiddle].Lod = GetSettingI("Shaders.ShadowsExteriors.Middle", "Lod");
+	//Shadows Cascade settings
+	for (int shadowType = 0; shadowType <= ShadowManager::ShadowMapTypeEnum::MapOrtho; shadowType++) {
+		char sectionName[256] = "Shaders.ShadowsExteriors.";
+		switch (shadowType) {
+		case ShadowManager::ShadowMapTypeEnum::MapNear:
+			strcat(sectionName, "Near");
+			break;
+		case ShadowManager::ShadowMapTypeEnum::MapMiddle:
+			strcat(sectionName, "Middle");
+			break;
+		case ShadowManager::ShadowMapTypeEnum::MapFar:
+			strcat(sectionName, "Far");
+			break;
+		case ShadowManager::ShadowMapTypeEnum::MapLod:
+			strcat(sectionName, "Lod");
+			break;
+		case ShadowManager::ShadowMapTypeEnum::MapOrtho:
+			strcat(sectionName, "Ortho");
+			break;
+		}
 
-	SettingsShadows.Exteriors.AlphaEnabled[ShadowManager::ShadowMapTypeEnum::MapFar] = GetSettingI("Shaders.ShadowsExteriors.Far", "AlphaEnabled");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapFar].Activators = GetSettingI("Shaders.ShadowsExteriors.Far", "Activators");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapFar].Actors = GetSettingI("Shaders.ShadowsExteriors.Far", "Actors");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapFar].Apparatus = GetSettingI("Shaders.ShadowsExteriors.Far", "Apparatus");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapFar].Books = GetSettingI("Shaders.ShadowsExteriors.Far", "Books");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapFar].Containers = GetSettingI("Shaders.ShadowsExteriors.Far", "Containers");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapFar].Doors = GetSettingI("Shaders.ShadowsExteriors.Far", "Doors");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapFar].Furniture = GetSettingI("Shaders.ShadowsExteriors.Far", "Furniture");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapFar].Misc = GetSettingI("Shaders.ShadowsExteriors.Far", "Misc");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapFar].Statics = GetSettingI("Shaders.ShadowsExteriors.Far", "Statics");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapFar].Terrain = GetSettingI("Shaders.ShadowsExteriors.Far", "Terrain");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapFar].Trees = GetSettingI("Shaders.ShadowsExteriors.Far", "Trees");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapFar].Lod = GetSettingI("Shaders.ShadowsExteriors.Far", "Lod");
+		SettingsShadows.Exteriors.AlphaEnabled[shadowType] = GetSettingI(sectionName, "AlphaEnabled");
+		SettingsShadows.Exteriors.Forms[shadowType].Activators = GetSettingI(sectionName, "Activators");
+		SettingsShadows.Exteriors.Forms[shadowType].Actors = GetSettingI(sectionName, "Actors");
+		SettingsShadows.Exteriors.Forms[shadowType].Apparatus = GetSettingI(sectionName, "Apparatus");
+		SettingsShadows.Exteriors.Forms[shadowType].Books = GetSettingI(sectionName, "Books");
+		SettingsShadows.Exteriors.Forms[shadowType].Containers = GetSettingI(sectionName, "Containers");
+		SettingsShadows.Exteriors.Forms[shadowType].Doors = GetSettingI(sectionName, "Doors");
+		SettingsShadows.Exteriors.Forms[shadowType].Furniture = GetSettingI(sectionName, "Furniture");
+		SettingsShadows.Exteriors.Forms[shadowType].Misc = GetSettingI(sectionName, "Misc");
+		SettingsShadows.Exteriors.Forms[shadowType].Statics = GetSettingI(sectionName, "Statics");
+		SettingsShadows.Exteriors.Forms[shadowType].Terrain = GetSettingI(sectionName, "Terrain");
+		SettingsShadows.Exteriors.Forms[shadowType].Trees = GetSettingI(sectionName, "Trees");
+		SettingsShadows.Exteriors.Forms[shadowType].Lod = GetSettingI(sectionName, "Lod");
+	};
 
-
-	SettingsShadows.Exteriors.AlphaEnabled[ShadowManager::ShadowMapTypeEnum::MapLod] = GetSettingI("Shaders.ShadowsExteriors.Lod", "AlphaEnabled");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapLod].Activators = GetSettingI("Shaders.ShadowsExteriors.Lod", "Activators");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapLod].Actors = GetSettingI("Shaders.ShadowsExteriors.Lod", "Actors");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapLod].Apparatus = GetSettingI("Shaders.ShadowsExteriors.Lod", "Apparatus");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapLod].Books = GetSettingI("Shaders.ShadowsExteriors.Lod", "Books");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapLod].Containers = GetSettingI("Shaders.ShadowsExteriors.Lod", "Containers");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapLod].Doors = GetSettingI("Shaders.ShadowsExteriors.Lod", "Doors");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapLod].Furniture = GetSettingI("Shaders.ShadowsExteriors.Lod", "Furniture");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapLod].Misc = GetSettingI("Shaders.ShadowsExteriors.Lod", "Misc");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapLod].Statics = GetSettingI("Shaders.ShadowsExteriors.Lod", "Statics");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapLod].Terrain = GetSettingI("Shaders.ShadowsExteriors.Lod", "Terrain");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapLod].Trees = GetSettingI("Shaders.ShadowsExteriors.Lod", "Trees");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapLod].Lod = GetSettingI("Shaders.ShadowsExteriors.Lod", "Lod");
-
-	SettingsShadows.Exteriors.AlphaEnabled[ShadowManager::ShadowMapTypeEnum::MapOrtho] = GetSettingI("Shaders.ShadowsExteriors.Ortho", "AlphaEnabled");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapOrtho].Activators = GetSettingI("Shaders.ShadowsExteriors.Ortho", "Activators");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapOrtho].Actors = GetSettingI("Shaders.ShadowsExteriors.Ortho", "Actors");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapOrtho].Apparatus = GetSettingI("Shaders.ShadowsExteriors.Ortho", "Apparatus");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapOrtho].Books = GetSettingI("Shaders.ShadowsExteriors.Ortho", "Books");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapOrtho].Containers = GetSettingI("Shaders.ShadowsExteriors.Ortho", "Containers");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapOrtho].Doors = GetSettingI("Shaders.ShadowsExteriors.Ortho", "Doors");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapOrtho].Furniture = GetSettingI("Shaders.ShadowsExteriors.Ortho", "Furniture");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapOrtho].Misc = GetSettingI("Shaders.ShadowsExteriors.Ortho", "Misc");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapOrtho].Statics = GetSettingI("Shaders.ShadowsExteriors.Ortho", "Statics");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapOrtho].Terrain = GetSettingI("Shaders.ShadowsExteriors.Ortho", "Terrain");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapOrtho].Trees = GetSettingI("Shaders.ShadowsExteriors.Ortho", "Trees");
-	SettingsShadows.Exteriors.Forms[ShadowManager::ShadowMapTypeEnum::MapOrtho].Lod = GetSettingI("Shaders.ShadowsExteriors.Ortho", "Lod");
-
-	Config.FillSections(&List, "Shaders.ShadowsExteriors.ExcludedFormID");
+	Config.FillSections(&List, "Shaders.ShadowsExteriors.ExcludedFormID"); // get the list of excluded formIDs
 	if (List.size()) SettingsShadows.Exteriors.ExcludedForms.reserve(List.size());
 	for (StringList::iterator Iter = List.begin(); Iter != List.end(); ++Iter) {
 		SettingsShadows.Exteriors.ExcludedForms.push_back(strtol(Iter->c_str(), NULL, 16));
@@ -874,6 +638,7 @@ void SettingManager::LoadSettings() {
 	SettingsShadows.Interiors.ShadowCubeMapSize = GetSettingI("Shaders.ShadowsInteriors.Main", "ShadowCubeMapSize");
 	SettingsShadows.Interiors.Darkness = GetSettingF("Shaders.ShadowsInteriors.Main", "Darkness");
 	SettingsShadows.Interiors.LightRadiusMult = GetSettingF("Shaders.ShadowsInteriors.Main", "LightRadiusMult");
+	SettingsShadows.Interiors.DrawDistance = GetSettingF("Shaders.ShadowsInteriors.Main", "DrawDistance");
 
 	Config.FillSections(&List, "Shaders.ShadowsInteriors.ExcludedFormID");
 	SettingsShadows.Interiors.ExcludedForms.reserve(List.size());
@@ -882,34 +647,7 @@ void SettingManager::LoadSettings() {
 	}
 	if (List.size()) std::sort(SettingsShadows.Interiors.ExcludedForms.begin(), SettingsShadows.Interiors.ExcludedForms.end());
 
-
-	SettingsSharpening.Strength = GetSettingF("Shaders.Sharpening.Main", "Strength");
-	SettingsSharpening.Clamp = GetSettingF("Shaders.Sharpening.Main", "Clamp");
-	SettingsSharpening.Offset = GetSettingF("Shaders.Sharpening.Main", "Offset");
-
-
-	SettingsSkin.Attenuation = GetSettingF("Shaders.Skin.Main", "Attenuation");
-	SettingsSkin.SpecularPower = GetSettingF("Shaders.Skin.Main", "SpecularPower");
-	SettingsSkin.MaterialThickness = GetSettingF("Shaders.Skin.Main", "MaterialThickness");
-	SettingsSkin.RimScalar = GetSettingF("Shaders.Skin.Main", "RimScalar");
-	SettingsSkin.CoeffRed = GetSettingF("Shaders.Skin.Main", "CoeffRed");
-	SettingsSkin.CoeffGreen = GetSettingF("Shaders.Skin.Main", "CoeffGreen");
-	SettingsSkin.CoeffBlue = GetSettingF("Shaders.Skin.Main", "CoeffBlue");
-
-
-	SettingsTerrain.DistantSpecular = GetSettingF("Shaders.Terrain.Main", "DistantSpecular");
-	SettingsTerrain.DistantNoise = GetSettingF("Shaders.Terrain.Main", "DistantNoise");
-	SettingsTerrain.NearSpecular = GetSettingF("Shaders.Terrain.Main", "NearSpecular");
-	SettingsTerrain.MiddleSpecular = GetSettingF("Shaders.Terrain.Main", "MiddleSpecular");
-
-
-	SettingsVolumetricFog.Exponent = GetSettingF("Shaders.VolumetricFog.Main", "Exponent");
-	SettingsVolumetricFog.ColorCoeff = GetSettingF("Shaders.VolumetricFog.Main", "ColorCoeff");
-	SettingsVolumetricFog.Amount = GetSettingF("Shaders.VolumetricFog.Main", "Amount");
-	SettingsVolumetricFog.MaxDistance = GetSettingF("Shaders.VolumetricFog.Main", "MaxDistance");
-
-
-	Config.FillSections(&List, "Shaders.Water");
+	Config.FillSections(&List, "Shaders.Water"); // get the list of waters
 	for (StringList::iterator Iter = List.begin(); Iter != List.end(); ++Iter) {
 		const char* WaterSection = Iter->c_str();
 		if (strcmp(WaterSection, "Status")) {
@@ -934,81 +672,79 @@ void SettingManager::LoadSettings() {
 		}
 	}
 
-	SettingsWaterLens.TimeMultA = GetSettingF("Shaders.WaterLens.Main", "TimeMultA");
-	SettingsWaterLens.TimeMultB = GetSettingF("Shaders.WaterLens.Main", "TimeMultB");
-	SettingsWaterLens.Time = GetSettingF("Shaders.WaterLens.Main", "Time");
-	SettingsWaterLens.Amount = GetSettingF("Shaders.WaterLens.Main", "Amount");
-	SettingsWaterLens.Viscosity = GetSettingF("Shaders.WaterLens.Main", "Viscosity");
-
+	timer.LogTime("SettingsManager::InitSettings for loop");
 }
 
+/*
+* Saves the state of the config to the config file
+*/
 void SettingManager::SaveSettings() {
 
 	char Filename[MAX_PATH];
 
 	GetCurrentDirectoryA(MAX_PATH, Filename);
-	strcat(Filename, SettingsFile);
+	strcat(Filename, TomlSettingsFile);
 	std::ofstream ConfigurationFile(Filename, std::ios::trunc | std::ios::binary);
-	ConfigurationFile << Config.Config;
+
+	// log config file contents
+	//std::stringstream buffer;
+	//buffer << Config.TomlConfig << std::endl;
+	//Logger::Log("%s", buffer.str().c_str());
+
+	ConfigurationFile << Config.TomlConfig << std::endl;
 	ConfigurationFile.close();
 
 }
 
 int SettingManager::GetSettingI(const char* Section, const char* Key) {
-
 	Configuration::ConfigNode Node;
-	int Value = 0;
+	int Value = 0; //default in case the setting doesn't exist
 
-	if (Config.FillNode(&Node, Section, Key)) Value = atoi(Node.Value);
+	if (Config.FillNode(&Node, Section, Key)) Value = atoi(Node.Value); // convert back from string to final type (TODO: store as native type)
 	return Value;
-
 }
 
 float SettingManager::GetSettingF(const char* Section, const char* Key) {
-
 	Configuration::ConfigNode Node;
-	float Value = 0.0f;
+	float Value = 0.0f; //default in case the setting doesn't exist
 
-	if (Config.FillNode(&Node, Section, Key)) Value = atof(Node.Value);
+	if (Config.FillNode(&Node, Section, Key)) Value = atof(Node.Value); // convert back from string to final type (TODO: store as native type)
 	return Value;
-
 }
 
 char* SettingManager::GetSettingS(const char* Section, const char* Key, char* Value) {
-
 	Configuration::ConfigNode Node;
 	
-	strcpy(Value, "\"");
+	strcpy(Value, "\""); //default in case the setting doesn't exist
 	if (Config.FillNode(&Node, Section, Key)) strcpy(Value, Node.Value);
 	return Value;
+}
 
+void SettingManager::SetSetting(const char* Section, const char* Key, UINT8 Value) {
+
+	Configuration::ConfigNode Node;
+	CreateNode(&Node, Section, Key, Value, false);
+	SetSetting(&Node);
+}
+
+void SettingManager::SetSetting(const char* Section, const char* Key, bool Value) {
+
+	Configuration::ConfigNode Node;
+	CreateNode(&Node, Section, Key, Value, false);
+	SetSetting(&Node);
 }
 
 void SettingManager::SetSetting(const char* Section, const char* Key, float Value) {
 
 	Configuration::ConfigNode Node;
+	CreateNode(&Node, Section, Key, Value, false);
 
-	if (memcmp(Section, "Weathers", 8)) {
-		Config.FillNode(&Node, Section, Key);
-		switch (Node.Type) {
-		case Configuration::NodeType::Boolean:
-			strcpy(Node.Value, ToString<bool>(Value).c_str());
-			break;
-		case Configuration::NodeType::Integer:
-			strcpy(Node.Value, ToString<int>(Value).c_str());
-			break;
-		case Configuration::NodeType::Float:
-			strcpy(Node.Value, ToString<float>(Value).c_str());
-			break;
-		}
-		SetSetting(&Node);
-	}
-	else {
-		SetSettingWeather(Section, Key, Value);
-	}
-
+	SetSetting(&Node);
 }
 
+/*
+* Builds a node and sets the value
+*/
 void SettingManager::SetSettingS(const char* Section, const char* Key, char* Value) {
 
 	Configuration::ConfigNode Node;
@@ -1019,12 +755,59 @@ void SettingManager::SetSettingS(const char* Section, const char* Key, char* Val
 
 }
 
+/*
+* Applies the changes made to the node value into the actual setting saving system
+*/
 void SettingManager::SetSetting(Configuration::ConfigNode* Node) {
 
 	Config.SetValue(Node);
-	LoadSettings();
-
 }
+
+void SettingManager::Increment(const char* Section, const char* Key) {
+	Configuration::ConfigNode Node;
+	Config.FillNode(&Node, Section, Key);
+	float value = 0;
+	switch (Node.Type) {
+	case Configuration::NodeType::Integer:
+		SetSetting(Section, Key, (UINT8)(GetSettingI(Section, Key) + 1));
+		break;
+	case Configuration::NodeType::Float:
+		// handle the float precision issue by clamping precision and treating the operation as int
+		//Logger::Log("Incrementing float Value %f", GetSettingF(Section, Key));
+		value = (int)(GetSettingF(Section, Key) * 10000) + 1000;
+		SetSetting(Section, Key, value / 10000);
+		break;
+	case Configuration::NodeType::Boolean:
+		SetSetting(Section, Key, !(bool)GetSettingI(Section, Key));
+		break;
+	default:
+		Logger::Log("Node %s is of a type that can't be incremented", Key);
+	}
+}
+
+
+void SettingManager::Decrement(const char* Section, const char* Key) {
+	Configuration::ConfigNode Node;
+	Config.FillNode(&Node, Section, Key);
+	float value = 0;
+	switch (Node.Type) {
+	case Configuration::NodeType::Integer:
+		SetSetting(Section, Key, (UINT8)(GetSettingI(Section, Key) - 1));
+		break;
+	case Configuration::NodeType::Float:
+		// handle the float precision issue by clamping precision and treating the operation as int
+		//Logger::Log("Decrementing float Value %f", GetSettingF(Section, Key));
+		value = (int)(GetSettingF(Section, Key) * 10000) - 1000;
+		SetSetting(Section, Key, value / 10000);
+		break;
+	case Configuration::NodeType::Boolean:
+		SetSetting(Section, Key, !(bool)GetSettingI(Section, Key));
+		break;
+	default:
+		Logger::Log("Node %s is of a type that can't be decremented");
+	}
+}
+
 
 void SettingManager::SetSettingWeather(const char* Section, const char* Key, float Value) {
 
@@ -1043,7 +826,6 @@ void SettingManager::SetSettingWeather(const char* Section, const char* Key, flo
 	SettingsWeather = GetSettingsWeather(WeatherName);
 	if (!SettingsWeather) {
 		Config.CreateWeatherSection(WeatherName, Weather);
-		LoadSettings();
 		SettingsWeather = GetSettingsWeather(WeatherName);
 	}
 	if (Values[2] == "Main") {
@@ -1124,6 +906,9 @@ void SettingManager::SetSettingWeather(const char* Section, const char* Key, flo
 
 }
 
+/*
+* Gets the subsections for a given section, used by the menu to list the children of a section.
+*/
 void SettingManager::FillMenuSections(StringList* Sections, const char* ParentSection) {
 
 	if (ParentSection == NULL || memcmp(ParentSection, "Weathers", 8)) {
@@ -1146,17 +931,22 @@ void SettingManager::FillMenuSections(StringList* Sections, const char* ParentSe
 
 }
 
+/*
+* Gathers the settings values for a given section of the menu, in order to display them in the menu.
+*/
 void SettingManager::FillMenuSettings(Configuration::SettingList* Settings, const char* Section) {
 
 	SettingsWeatherStruct* SettingsWeather = NULL;
 	Configuration::ConfigNode Node;
 	StringList Values;
 
+	Settings->clear();
 	if (memcmp(Section, "Weathers", 8)) {
+		// not weather, simply gather key/value pairs for each settings of the section
 		Config.FillSettings(Settings, Section);
 	}
 	else {
-		Settings->clear();
+		// handle generated values from game data for weather sections
 		SplitString(Section, ".", &Values);
 		SettingsWeather = GetSettingsWeather(Values[1].c_str());
 		if (SettingsWeather) {
@@ -1165,36 +955,36 @@ void SettingManager::FillMenuSettings(Configuration::SettingList* Settings, cons
 			}
 			else if (Values[2] == "HDR") {
 				for (UInt32 i = 0; i < 14; i++) {
-					CreateNodeF(&Node, Section, WeatherHDRTypes[i], SettingsWeather->HDR[i], 0, Configuration::NodeType::Float);
+					CreateNode(&Node, Section, WeatherHDRTypes[i], SettingsWeather->HDR[i], 0);
 					Settings->push_back(Node);
 				}
 			}
 			else {
 				for (UInt32 i = 0; i < TESWeather::kNumColorTypes; i++) {
 					if (Values[2] == WeatherColorTypes[i]) {
-						CreateNodeF(&Node, Section, "DayR", SettingsWeather->Colors[i].colors[TESWeather::eTime_Day].r, 0, Configuration::NodeType::Integer);
+						CreateNode(&Node, Section, "DayR", SettingsWeather->Colors[i].colors[TESWeather::eTime_Day].r, 0);
 						Settings->push_back(Node);
-						CreateNodeF(&Node, Section, "DayG", SettingsWeather->Colors[i].colors[TESWeather::eTime_Day].g, 0, Configuration::NodeType::Integer);
+						CreateNode(&Node, Section, "DayG", SettingsWeather->Colors[i].colors[TESWeather::eTime_Day].g, 0);
 						Settings->push_back(Node);
-						CreateNodeF(&Node, Section, "DayB", SettingsWeather->Colors[i].colors[TESWeather::eTime_Day].b, 0, Configuration::NodeType::Integer);
+						CreateNode(&Node, Section, "DayB", SettingsWeather->Colors[i].colors[TESWeather::eTime_Day].b, 0);
 						Settings->push_back(Node);
-						CreateNodeF(&Node, Section, "NightR", SettingsWeather->Colors[i].colors[TESWeather::eTime_Night].r, 0, Configuration::NodeType::Integer);
+						CreateNode(&Node, Section, "NightR", SettingsWeather->Colors[i].colors[TESWeather::eTime_Night].r, 0);
 						Settings->push_back(Node);
-						CreateNodeF(&Node, Section, "NightG", SettingsWeather->Colors[i].colors[TESWeather::eTime_Night].g, 0, Configuration::NodeType::Integer);
+						CreateNode(&Node, Section, "NightG", SettingsWeather->Colors[i].colors[TESWeather::eTime_Night].g, 0);
 						Settings->push_back(Node);
-						CreateNodeF(&Node, Section, "NightB", SettingsWeather->Colors[i].colors[TESWeather::eTime_Night].b, 0, Configuration::NodeType::Integer);
+						CreateNode(&Node, Section, "NightB", SettingsWeather->Colors[i].colors[TESWeather::eTime_Night].b, 0);
 						Settings->push_back(Node);
-						CreateNodeF(&Node, Section, "SunriseR", SettingsWeather->Colors[i].colors[TESWeather::eTime_Sunrise].r, 0, Configuration::NodeType::Integer);
+						CreateNode(&Node, Section, "SunriseR", SettingsWeather->Colors[i].colors[TESWeather::eTime_Sunrise].r, 0);
 						Settings->push_back(Node);
-						CreateNodeF(&Node, Section, "SunriseG", SettingsWeather->Colors[i].colors[TESWeather::eTime_Sunrise].g, 0, Configuration::NodeType::Integer);
+						CreateNode(&Node, Section, "SunriseG", SettingsWeather->Colors[i].colors[TESWeather::eTime_Sunrise].g, 0);
 						Settings->push_back(Node);
-						CreateNodeF(&Node, Section, "SunriseB", SettingsWeather->Colors[i].colors[TESWeather::eTime_Sunrise].b, 0, Configuration::NodeType::Integer);
+						CreateNode(&Node, Section, "SunriseB", SettingsWeather->Colors[i].colors[TESWeather::eTime_Sunrise].b, 0);
 						Settings->push_back(Node);
-						CreateNodeF(&Node, Section, "SunsetR", SettingsWeather->Colors[i].colors[TESWeather::eTime_Sunset].r, 0, Configuration::NodeType::Integer);
+						CreateNode(&Node, Section, "SunsetR", SettingsWeather->Colors[i].colors[TESWeather::eTime_Sunset].r, 0);
 						Settings->push_back(Node);
-						CreateNodeF(&Node, Section, "SunsetG", SettingsWeather->Colors[i].colors[TESWeather::eTime_Sunset].g, 0, Configuration::NodeType::Integer);
+						CreateNode(&Node, Section, "SunsetG", SettingsWeather->Colors[i].colors[TESWeather::eTime_Sunset].g, 0);
 						Settings->push_back(Node);
-						CreateNodeF(&Node, Section, "SunsetB", SettingsWeather->Colors[i].colors[TESWeather::eTime_Sunset].b, 0, Configuration::NodeType::Integer);
+						CreateNode(&Node, Section, "SunsetB", SettingsWeather->Colors[i].colors[TESWeather::eTime_Sunset].b, 0);
 						Settings->push_back(Node);
 					}
 				}
@@ -1203,59 +993,59 @@ void SettingManager::FillMenuSettings(Configuration::SettingList* Settings, cons
 		else {
 			TESWeather* Weather = (TESWeather*)DataHandler->GetFormByName(Values[1].c_str(), TESForm::FormType::kFormType_Weather);
 			if (Values[2] == "Main") {
-				CreateNodeF(&Node, Section, "CloudSpeedLower", Weather->GetCloudSpeedLower(), 0, Configuration::NodeType::Integer);
+				CreateNode(&Node, Section, "CloudSpeedLower", Weather->GetCloudSpeedLower(), 0);
 				Settings->push_back(Node);
-				CreateNodeF(&Node, Section, "CloudSpeedUpper", Weather->GetCloudSpeedUpper(), 0, Configuration::NodeType::Integer);
+				CreateNode(&Node, Section, "CloudSpeedUpper", Weather->GetCloudSpeedUpper(), 0);
 				Settings->push_back(Node);
-				CreateNodeF(&Node, Section, "FogFarDay", Weather->GetFogDayFar(), 0, Configuration::NodeType::Float);
+				CreateNode(&Node, Section, "FogFarDay", Weather->GetFogDayFar(), 0);
 				Settings->push_back(Node);
-				CreateNodeF(&Node, Section, "FogFarNight", Weather->GetFogNightFar(), 0, Configuration::NodeType::Float);
+				CreateNode(&Node, Section, "FogFarNight", Weather->GetFogNightFar(), 0);
 				Settings->push_back(Node);
-				CreateNodeF(&Node, Section, "FogNearDay", Weather->GetFogDayNear(), 0, Configuration::NodeType::Float);
+				CreateNode(&Node, Section, "FogNearDay", Weather->GetFogDayNear(), 0);
 				Settings->push_back(Node);
-				CreateNodeF(&Node, Section, "FogNearNight", Weather->GetFogNightNear(), 0, Configuration::NodeType::Float);
+				CreateNode(&Node, Section, "FogNearNight", Weather->GetFogNightNear(), 0);
 				Settings->push_back(Node);
-				CreateNodeF(&Node, Section, "SunDamage", Weather->GetSunDamage(), 0, Configuration::NodeType::Integer);
+				CreateNode(&Node, Section, "SunDamage", Weather->GetSunDamage(), 0);
 				Settings->push_back(Node);
-				CreateNodeF(&Node, Section, "SunGlare", Weather->GetSunGlare(), 0, Configuration::NodeType::Integer);
+				CreateNode(&Node, Section, "SunGlare", Weather->GetSunGlare(), 0);
 				Settings->push_back(Node);
-				CreateNodeF(&Node, Section, "TransDelta", Weather->GetTransDelta(), 0, Configuration::NodeType::Integer);
+				CreateNode(&Node, Section, "TransDelta", Weather->GetTransDelta(), 0);
 				Settings->push_back(Node);
-				CreateNodeF(&Node, Section, "WindSpeed", Weather->GetWindSpeed(), 0, Configuration::NodeType::Integer);
+				CreateNode(&Node, Section, "WindSpeed", Weather->GetWindSpeed(), 0);
 				Settings->push_back(Node);
 			}
 			else if (Values[2] == "HDR") {
 				for (UInt32 i = 0; i < 14; i++) {
-					CreateNodeF(&Node, Section, WeatherHDRTypes[i], Weather->GetHDR(i), 0, Configuration::NodeType::Float);
+					CreateNode(&Node, Section, WeatherHDRTypes[i], Weather->GetHDR(i), 0);
 					Settings->push_back(Node);
 				}
 			}
 			else {
 				for (UInt32 i = 0; i < TESWeather::kNumColorTypes; i++) {
 					if (Values[2] == WeatherColorTypes[i]) {
-						CreateNodeF(&Node, Section, "DayR", Weather->colors[i].colors[TESWeather::eTime_Day].r, 0, Configuration::NodeType::Integer);
+						CreateNode(&Node, Section, "DayR", Weather->colors[i].colors[TESWeather::eTime_Day].r, 0);
 						Settings->push_back(Node);
-						CreateNodeF(&Node, Section, "DayG", Weather->colors[i].colors[TESWeather::eTime_Day].g, 0, Configuration::NodeType::Integer);
+						CreateNode(&Node, Section, "DayG", Weather->colors[i].colors[TESWeather::eTime_Day].g, 0);
 						Settings->push_back(Node);
-						CreateNodeF(&Node, Section, "DayB", Weather->colors[i].colors[TESWeather::eTime_Day].b, 0, Configuration::NodeType::Integer);
+						CreateNode(&Node, Section, "DayB", Weather->colors[i].colors[TESWeather::eTime_Day].b, 0);
 						Settings->push_back(Node);
-						CreateNodeF(&Node, Section, "NightR", Weather->colors[i].colors[TESWeather::eTime_Night].r, 0, Configuration::NodeType::Integer);
+						CreateNode(&Node, Section, "NightR", Weather->colors[i].colors[TESWeather::eTime_Night].r, 0);
 						Settings->push_back(Node);
-						CreateNodeF(&Node, Section, "NightG", Weather->colors[i].colors[TESWeather::eTime_Night].g, 0, Configuration::NodeType::Integer);
+						CreateNode(&Node, Section, "NightG", Weather->colors[i].colors[TESWeather::eTime_Night].g, 0);
 						Settings->push_back(Node);
-						CreateNodeF(&Node, Section, "NightB", Weather->colors[i].colors[TESWeather::eTime_Night].b, 0, Configuration::NodeType::Integer);
+						CreateNode(&Node, Section, "NightB", Weather->colors[i].colors[TESWeather::eTime_Night].b, 0);
 						Settings->push_back(Node);
-						CreateNodeF(&Node, Section, "SunriseR", Weather->colors[i].colors[TESWeather::eTime_Sunrise].r, 0, Configuration::NodeType::Integer);
+						CreateNode(&Node, Section, "SunriseR", Weather->colors[i].colors[TESWeather::eTime_Sunrise].r, 0);
 						Settings->push_back(Node);
-						CreateNodeF(&Node, Section, "SunriseG", Weather->colors[i].colors[TESWeather::eTime_Sunrise].g, 0, Configuration::NodeType::Integer);
+						CreateNode(&Node, Section, "SunriseG", Weather->colors[i].colors[TESWeather::eTime_Sunrise].g, 0);
 						Settings->push_back(Node);
-						CreateNodeF(&Node, Section, "SunriseB", Weather->colors[i].colors[TESWeather::eTime_Sunrise].b, 0, Configuration::NodeType::Integer);
+						CreateNode(&Node, Section, "SunriseB", Weather->colors[i].colors[TESWeather::eTime_Sunrise].b, 0);
 						Settings->push_back(Node);
-						CreateNodeF(&Node, Section, "SunsetR", Weather->colors[i].colors[TESWeather::eTime_Sunset].r, 0, Configuration::NodeType::Integer);
+						CreateNode(&Node, Section, "SunsetR", Weather->colors[i].colors[TESWeather::eTime_Sunset].r, 0);
 						Settings->push_back(Node);
-						CreateNodeF(&Node, Section, "SunsetG", Weather->colors[i].colors[TESWeather::eTime_Sunset].g, 0, Configuration::NodeType::Integer);
+						CreateNode(&Node, Section, "SunsetG", Weather->colors[i].colors[TESWeather::eTime_Sunset].g, 0);
 						Settings->push_back(Node);
-						CreateNodeF(&Node, Section, "SunsetB", Weather->colors[i].colors[TESWeather::eTime_Sunset].b, 0, Configuration::NodeType::Integer);
+						CreateNode(&Node, Section, "SunsetB", Weather->colors[i].colors[TESWeather::eTime_Sunset].b, 0);
 						Settings->push_back(Node);
 					}
 				}
@@ -1265,103 +1055,79 @@ void SettingManager::FillMenuSettings(Configuration::SettingList* Settings, cons
 
 }
 
-void SettingManager::CreateNodeF(Configuration::ConfigNode* Node, const char* Section, const char* Key, float Value, bool Reboot, UInt32 Type) {
 
+/*
+* Creates a Config Node to hold the info for a given setting, based on section, key, type and value.
+*/
+void SettingManager::CreateNode(Configuration::ConfigNode* Node, const char* Section, const char* Key, float Value, bool Reboot) {
 	strcpy(Node->Section, Section);
 	strcpy(Node->Key, Key);
-	switch (Type) {
-	case Configuration::NodeType::Boolean:
-		strcpy(Node->Value, ToString<bool>(Value).c_str());
-		break;
-	case Configuration::NodeType::Integer:
-		strcpy(Node->Value, ToString<int>(Value).c_str());
-		break;
-	case Configuration::NodeType::Float:
-		strcpy(Node->Value, ToString<float>(Value).c_str());
-		break;
-	}
+	strcpy(Node->Value, ToString<float>(Value).c_str()); // convert to string to store value (TODO: store values in native format)
 	Node->Reboot = Reboot;
-	Node->Type = Type;
-
+	Node->Type = Configuration::NodeType::Float;
 }
 
-void SettingManager::CreateNodeS(Configuration::ConfigNode* Node, const char* Section, const char* Key, const char* Value, bool Reboot) {
 
+/*
+* Creates a Config Node to hold the info for a given setting, based on section, key, type and value.
+*/
+void SettingManager::CreateNode(Configuration::ConfigNode* Node, const char* Section, const char* Key, UINT8 Value, bool Reboot) {
+	strcpy(Node->Section, Section);
+	strcpy(Node->Key, Key);
+	strcpy(Node->Value, ToString<int>(Value).c_str()); // convert to string to store value (TODO: store values in native format)
+	Node->Reboot = Reboot;
+	Node->Type = Configuration::NodeType::Integer;
+}
+
+/*
+* Creates a Config Node to hold the info for a given setting, based on section, key, type and value.
+*/
+void SettingManager::CreateNode(Configuration::ConfigNode* Node, const char* Section, const char* Key, bool Value, bool Reboot) {
+	strcpy(Node->Section, Section);
+	strcpy(Node->Key, Key);
+	strcpy(Node->Value, ToString<bool>(Value).c_str()); // convert to string to store value (TODO: store values in native format)
+	Node->Reboot = Reboot;
+	Node->Type = Configuration::NodeType::Boolean;
+}
+
+/*
+* Creates a Config Node to hold the info for a given setting, based on section, key, type and value.
+*/
+void SettingManager::CreateNodeS(Configuration::ConfigNode* Node, const char* Section, const char* Key, const char* Value, bool Reboot) {
 	strcpy(Node->Section, Section);
 	strcpy(Node->Key, Key);
 	strcpy(Node->Value, Value);
 	Node->Reboot = Reboot;
 	Node->Type = Configuration::NodeType::String;
-
 }
+
 
 bool SettingManager::GetMenuShaderEnabled(const char* Name) {
+	char settingString[256];
+	strcpy(settingString, "Shaders.");
+	strcat(settingString, Name);
 
-	bool Value = false;
+	// handle enabling shaders that don't appear in settings (always on)
+	char path[256] = "_";
+	strcat(path, settingString);
+	if (!Config.TomlConfig.at_path(path).is_table() && !Config.DefaultConfig.at_path(path).is_table()) {
+		Logger::Log("No Shader setting for %s, defaults to true", settingString);
+		return true;
+	}
 
-	if (!strcmp(Name, "AmbientOcclusion"))
-		Value = SettingsMain.Effects.AmbientOcclusion;
-	else if (!strcmp(Name, "Blood"))
-		Value = SettingsMain.Shaders.Blood;
-	else if (!strcmp(Name, "BloodLens"))
-		Value = SettingsMain.Effects.BloodLens;
-	else if (!strcmp(Name, "Bloom"))
-		Value = SettingsMain.Effects.Bloom;
-	else if (!strcmp(Name, "Cinema"))
-		Value = SettingsMain.Effects.Cinema;
-	else if (!strcmp(Name, "Coloring"))
-		Value = SettingsMain.Effects.Coloring;
-	else if (!strcmp(Name, "DepthOfField"))
-		Value = SettingsMain.Effects.DepthOfField;
-	else if (!strcmp(Name, "ExtraEffects"))
-		Value = SettingsMain.Effects.Extra;
-	else if (!strcmp(Name, "ExtraShaders"))
-		Value = SettingsMain.Shaders.Extra;
-	else if (!strcmp(Name, "GodRays"))
-		Value = SettingsMain.Effects.GodRays;
-	else if (!strcmp(Name, "Grass"))
-		Value = SettingsMain.Shaders.Grass;
-	else if (!strcmp(Name, "HDR"))
-		Value = SettingsMain.Shaders.HDR;
-	else if (!strcmp(Name, "LowHF"))
-		Value = SettingsMain.Effects.LowHF;
-	else if (!strcmp(Name, "MotionBlur"))
-		Value = SettingsMain.Effects.MotionBlur;
-	else if (!strcmp(Name, "NightEye"))
-		Value = SettingsMain.Shaders.NightEye;
-	else if (!strcmp(Name, "POM"))
-		Value = SettingsMain.Shaders.POM;
-	else if (!strcmp(Name, "Rain"))
-		Value = SettingsMain.Effects.Rain;
-	else if (!strcmp(Name, "Snow"))
-		Value = SettingsMain.Effects.Snow;
-	else if (!strcmp(Name, "ShadowsExteriors"))
-		Value = SettingsMain.Effects.ShadowsExteriors;
-	else if (!strcmp(Name, "ShadowsInteriors"))
-		Value = SettingsMain.Effects.ShadowsInteriors;
-	else if (!strcmp(Name, "Sharpening"))
-		Value = SettingsMain.Effects.Sharpening;
-	else if (!strcmp(Name, "Specular"))
-		Value = SettingsMain.Effects.Specular;
-	else if (!strcmp(Name, "Skin"))
-		Value = SettingsMain.Shaders.Skin;
-	else if (!strcmp(Name, "SnowAccumulation"))
-		Value = SettingsMain.Effects.SnowAccumulation;
-	else if (!strcmp(Name, "Terrain"))
-		Value = SettingsMain.Shaders.Terrain;
-	else if (!strcmp(Name, "Underwater"))
-		Value = SettingsMain.Effects.Underwater;
-	else if (!strcmp(Name, "VolumetricFog"))
-		Value = SettingsMain.Effects.VolumetricFog;
-	else if (!strcmp(Name, "Water"))
-		Value = SettingsMain.Shaders.Water;
-	else if (!strcmp(Name, "WaterLens"))
-		Value = SettingsMain.Effects.WaterLens;
-	else if (!strcmp(Name, "WetWorld"))
-		Value = SettingsMain.Effects.WetWorld;
-	return Value;
-
+	strcat(settingString, ".Status");
+	return (bool*)GetSettingI(settingString, "Enabled");
 }
+
+
+void SettingManager::SetMenuShaderEnabled(const char* Name, bool enabled) {
+	char settingString[256];
+	strcpy(settingString, "Shaders.");
+	strcat(settingString, Name);
+	strcat(settingString, ".Status");
+	SetSetting(settingString, "Enabled", enabled);
+}
+
 
 SettingsWaterStruct* SettingManager::GetSettingsWater(const char* PlayerLocation) {
 

@@ -66,9 +66,7 @@ void RenderManager::UpdateSceneCameraData() {
 		CameraForward.x = WorldRotate->data[0][0];
 		CameraForward.y = WorldRotate->data[1][0];
 		CameraForward.z = WorldRotate->data[2][0];
-		CameraPosition.x = WorldTranslate->x;
-		CameraPosition.y = WorldTranslate->y;
-		CameraPosition.z = WorldTranslate->z;
+		CameraPosition = WorldTranslate->toD3DXVEC4();
 	}
 
 }
@@ -193,12 +191,8 @@ void RenderManager::SetupSceneCamera() {
 		D3DXMatrixInverse(&InvProjMatrix, NULL, &projMatrix);
 		InvViewProjMatrix = InvProjMatrix * invViewMatrix;
 
-		CameraForward.x = Forward.x;
-		CameraForward.y = Forward.y;
-		CameraForward.z = Forward.z;
-		CameraPosition.x = WorldTranslate->x;
-		CameraPosition.y = WorldTranslate->y;
-		CameraPosition.z = WorldTranslate->z;
+		CameraForward = Forward.toD3DXVEC4();
+		CameraPosition = WorldTranslate->toD3DXVEC4();
 
 		// depth reconstruction constants
 		DepthConstants.x = - nearZ; //NearZ: TESR_ProjectionTransform._43 / TESR_ProjectionTransform._33
@@ -423,7 +417,7 @@ DWNode* DWNode::Get() {
 
 }
 
-void DWNode::AddNode(char* Name, NiAVObject* Child0, NiAVObject* Child1) {
+void DWNode::AddNode(const char* Name, NiAVObject* Child0, NiAVObject* Child1) {
 
 	NiNode* Node = (NiNode*)Pointers::Functions::MemoryAlloc(sizeof(NiNode)); Node->New(2);
 
