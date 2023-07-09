@@ -1,3 +1,4 @@
+#include <unordered_map>
 /*
 * Constructor of Animator class. Starts an animator for a given value.
 */
@@ -42,7 +43,7 @@ void Animator::Start(float duration, float finalValue) {
 float Animator::GetValue() {
 	float currenttime = time->GameHour->data;
 	if (!running) return startValue;
-	
+
 	if (currenttime > endTime) {
 		running = false;
 		startValue = endValue;
@@ -64,260 +65,145 @@ ShaderProgram::ShaderProgram() {
 
 }
 
-ShaderProgram::~ShaderProgram() {
+std::unordered_map<LPCSTR, D3DXVECTOR4*> tableShaderStringsToConstants = {
 
-	delete[] FloatShaderValues;
-	delete[] TextureShaderValues;
+	{"TESR_ToneMapping", &TheShaderManager->ShaderConst.HDR.ToneMapping},
+	{"TESR_ParallaxData", &TheShaderManager->ShaderConst.POM.ParallaxData},
+	{"TESR_GrassScale", &TheShaderManager->ShaderConst.Grass.Scale},
+	{"TESR_TerrainData", &TheShaderManager->ShaderConst.Terrain.Data},
+	{"TESR_SkinData", &TheShaderManager->ShaderConst.Skin.SkinData},
+	{"TESR_SkinColor", &TheShaderManager->ShaderConst.Skin.SkinColor},
+	{"TESR_ShadowData", &TheShaderManager->ShaderConst.Shadow.Data},
+	{"TESR_ShadowScreenSpaceData", &TheShaderManager->ShaderConst.Shadow.ScreenSpaceData},
+	{"TESR_ShadowRadius", &TheShaderManager->ShaderConst.ShadowMap.ShadowMapRadius},
+	{"TESR_OrthoData", &TheShaderManager->ShaderConst.Shadow.OrthoData},
+	{"TESR_RainData", &TheShaderManager->ShaderConst.Rain.RainData},
+	{"TESR_RainAspect", &TheShaderManager->ShaderConst.Rain.RainAspect},
+	{"TESR_SnowData", &TheShaderManager->ShaderConst.Snow.SnowData},
+	{"TESR_WorldTransform", (D3DXVECTOR4*)&TheRenderManager->worldMatrix},
+	{"TESR_ViewTransform", (D3DXVECTOR4*)&TheRenderManager->viewMatrix},
+	{"TESR_ProjectionTransform", (D3DXVECTOR4*)&TheRenderManager->projMatrix},
+	{"TESR_InvProjectionTransform", (D3DXVECTOR4*)&TheRenderManager->InvProjMatrix},
+	{"TESR_WorldViewProjectionTransform", (D3DXVECTOR4*)&TheRenderManager->WorldViewProjMatrix},
+	{"TESR_InvViewProjectionTransform", (D3DXVECTOR4*)&TheRenderManager->InvViewProjMatrix},
+	{"TESR_ViewProjectionTransform", (D3DXVECTOR4*)&TheRenderManager->ViewProjMatrix},
+	{"TESR_ViewSpaceLightDir", (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ViewSpaceLightDir},
+	{"TESR_ScreenSpaceLightDir", (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ScreenSpaceLightDir},
+	{"TESR_ShadowWorldTransform", (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowWorld},
+	{"TESR_ShadowViewProjTransform", (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowViewProj},
+	{"TESR_ShadowCameraToLightTransform", (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowCameraToLight},
+	{"TESR_ShadowCameraToLightTransformNear", (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowCameraToLight[0]},
+	{"TESR_ShadowCameraToLightTransformMiddle", (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowCameraToLight[1]},
+	{"TESR_ShadowCameraToLightTransformFar", (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowCameraToLight[2]},
+	{"TESR_ShadowCameraToLightTransformLod", (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowCameraToLight[3]},
+	{"TESR_ShadowCameraToLightTransformOrtho", (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowCameraToLight[4]},
+	{"TESR_ShadowCubeMapLightPosition", &TheShaderManager->ShaderConst.ShadowMap.ShadowCubeMapLightPosition},
+	{"TESR_ShadowLightPosition", (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowLightPosition},
+	{"TESR_ShadowLightPosition0", (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowLightPosition[0]},
+	{"TESR_ShadowLightPosition1", (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowLightPosition[1]},
+	{"TESR_ShadowLightPosition2", (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowLightPosition[2]},
+	{"TESR_ShadowLightPosition3", (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowLightPosition[3]},
+	{"TESR_ShadowLightPosition4", (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowLightPosition[4]},
+	{"TESR_ShadowLightPosition5", (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowLightPosition[5]},
+	{"TESR_ShadowLightPosition6", (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowLightPosition[6]},
+	{"TESR_ShadowLightPosition7", (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowLightPosition[7]},
+	{"TESR_ShadowLightPosition8", (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowLightPosition[8]},
+	{"TESR_ShadowLightPosition9", (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowLightPosition[9]},
+	{"TESR_ShadowLightPosition10", (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowLightPosition[10]},
+	{"TESR_ShadowLightPosition11", (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowLightPosition[11]},
+	{"TESR_LightPosition0", (D3DXVECTOR4*)&TheShaderManager->LightPosition[0]},
+	{"TESR_LightPosition1", (D3DXVECTOR4*)&TheShaderManager->LightPosition[1]},
+	{"TESR_LightPosition2", (D3DXVECTOR4*)&TheShaderManager->LightPosition[2]},
+	{"TESR_LightPosition3", (D3DXVECTOR4*)&TheShaderManager->LightPosition[3]},
+	{"TESR_LightPosition4", (D3DXVECTOR4*)&TheShaderManager->LightPosition[4]},
+	{"TESR_LightPosition5", (D3DXVECTOR4*)&TheShaderManager->LightPosition[5]},
+	{"TESR_LightPosition6", (D3DXVECTOR4*)&TheShaderManager->LightPosition[6]},
+	{"TESR_LightPosition7", (D3DXVECTOR4*)&TheShaderManager->LightPosition[7]},
+	{"TESR_LightPosition8", (D3DXVECTOR4*)&TheShaderManager->LightPosition[8]},
+	{"TESR_LightPosition9", (D3DXVECTOR4*)&TheShaderManager->LightPosition[9]},
+	{"TESR_LightPosition10", (D3DXVECTOR4*)&TheShaderManager->LightPosition[10]},
+	{"TESR_LightPosition11", (D3DXVECTOR4*)&TheShaderManager->LightPosition[11]},
+	{"TESR_LightAttenuation0", (D3DXVECTOR4*)&TheShaderManager->LightAttenuation[0]},
+	{"TESR_LightAttenuation1", (D3DXVECTOR4*)&TheShaderManager->LightAttenuation[1]},
+	{"TESR_LightAttenuation2", (D3DXVECTOR4*)&TheShaderManager->LightAttenuation[2]},
+	{"TESR_LightAttenuation3", (D3DXVECTOR4*)&TheShaderManager->LightAttenuation[3]},
+	{"TESR_LightAttenuation4", (D3DXVECTOR4*)&TheShaderManager->LightAttenuation[4]},
+	{"TESR_LightAttenuation5", (D3DXVECTOR4*)&TheShaderManager->LightAttenuation[5]},
+	{"TESR_LightAttenuation6", (D3DXVECTOR4*)&TheShaderManager->LightAttenuation[6]},
+	{"TESR_LightAttenuation7", (D3DXVECTOR4*)&TheShaderManager->LightAttenuation[7]},
+	{"TESR_ShadowCubeMapBlend", &TheShaderManager->ShaderConst.ShadowMap.ShadowCubeMapBlend},
+	{"TESR_OcclusionWorldViewProjTransform", (D3DXVECTOR4*)&TheShaderManager->ShaderConst.OcclusionMap.OcclusionWorldViewProj},
+	{"TESR_ReciprocalResolution", &TheShaderManager->ShaderConst.ReciprocalResolution},
+	{"TESR_CameraForward", &TheRenderManager->CameraForward},
+	{"TESR_DepthConstants", &TheRenderManager->DepthConstants},
+	{"TESR_CameraData", &TheRenderManager->CameraData},
+	{"TESR_CameraPosition", &TheRenderManager->CameraPosition},
+	{"TESR_SunDirection", &TheShaderManager->ShaderConst.SunDir},
+	{"TESR_SunTiming", &TheShaderManager->ShaderConst.SunTiming},
+	{"TESR_SunAmount", &TheShaderManager->ShaderConst.SunAmount},
+	{"TESR_ShadowFade", (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowFade},
+	{"TESR_GameTime", &TheShaderManager->ShaderConst.GameTime},
+	{"TESR_WaterCoefficients", &TheShaderManager->ShaderConst.Water.waterCoefficients},
+	{"TESR_WaveParams", &TheShaderManager->ShaderConst.Water.waveParams},
+	{"TESR_WaterVolume", &TheShaderManager->ShaderConst.Water.waterVolume},
+	{"TESR_WaterSettings", &TheShaderManager->ShaderConst.Water.waterSettings},
+	{"TESR_WaterDeepColor", &TheShaderManager->ShaderConst.Water.deepColor},
+	{"TESR_WaterShallowColor", &TheShaderManager->ShaderConst.Water.shallowColor},
+	{"TESR_WaterShorelineParams", &TheShaderManager->ShaderConst.Water.shorelineParams},
+	{"TESR_FogColor", &TheShaderManager->ShaderConst.fogColor},
+	{"TESR_HorizonColor", &TheShaderManager->ShaderConst.horizonColor},
+	{"TESR_SunColor", &TheShaderManager->ShaderConst.sunColor},
+	{"TESR_SkyColor", &TheShaderManager->ShaderConst.skyColor},
+	{"TESR_SunAmbient", &TheShaderManager->ShaderConst.sunAmbient},
+	{"TESR_FogData", &TheShaderManager->ShaderConst.fogData},
+	{"TESR_FogDistance", &TheShaderManager->ShaderConst.fogDistance},
+	{"TESR_AmbientOcclusionAOData", &TheShaderManager->ShaderConst.AmbientOcclusion.AOData},
+	{"TESR_AmbientOcclusionData", &TheShaderManager->ShaderConst.AmbientOcclusion.Data},
+	{"TESR_BloodLensParams", &TheShaderManager->ShaderConst.BloodLens.Params},
+	{"TESR_BloodLensColor", &TheShaderManager->ShaderConst.BloodLens.BloodColor},
+	{"TESR_BloomData", &TheShaderManager->ShaderConst.Bloom.BloomData},
+	{"TESR_BloomValues", &TheShaderManager->ShaderConst.Bloom.BloomValues},
+	{"TESR_CinemaData", &TheShaderManager->ShaderConst.Cinema.Data},
+	{"TESR_CinemaSettings", &TheShaderManager->ShaderConst.Cinema.Settings},
+	{"TESR_ColoringColorCurve", &TheShaderManager->ShaderConst.Coloring.ColorCurve},
+	{"TESR_ColoringEffectGamma", &TheShaderManager->ShaderConst.Coloring.EffectGamma},
+	{"TESR_ColoringData", &TheShaderManager->ShaderConst.Coloring.Data},
+	{"TESR_ColoringValues", &TheShaderManager->ShaderConst.Coloring.Values},
+	{"TESR_DepthOfFieldBlur", &TheShaderManager->ShaderConst.DepthOfField.Blur},
+	{"TESR_DepthOfFieldData", &TheShaderManager->ShaderConst.DepthOfField.Data},
+	{"TESR_ExposureData", &TheShaderManager->ShaderConst.Exposure.Data},
+	{"TESR_GodRaysRay", &TheShaderManager->ShaderConst.GodRays.Ray},
+	{"TESR_GodRaysRayColor", &TheShaderManager->ShaderConst.GodRays.RayColor},
+	{"TESR_GodRaysData", &TheShaderManager->ShaderConst.GodRays.Data},
+	{"TESR_LensData", &TheShaderManager->ShaderConst.Lens.Data},
+	{"TESR_LowHFData", &TheShaderManager->ShaderConst.LowHF.Data},
+	{"TESR_MotionBlurParams", &TheShaderManager->ShaderConst.MotionBlur.BlurParams},
+	{"TESR_MotionBlurData", &TheShaderManager->ShaderConst.MotionBlur.Data},
+	{"TESR_SharpeningData", &TheShaderManager->ShaderConst.Sharpening.Data},
+	{"TESR_SpecularData", &TheShaderManager->ShaderConst.Specular.Data},
+	{"TESR_SpecularEffects", &TheShaderManager->ShaderConst.Specular.EffectStrength},
+	//{"TESR_FyTyAllInOneColorFilter", &TheShaderManager->ShaderConst.AllInOne.ColorFilter},
+	//{"TESR_FyTyAllInOneColorFilterSecond_Adaptation_Brightness", &TheShaderManager->ShaderConst.AllInOne.ColorFilterSecond_Adaptation_Brightness},
+	//{"TESR_FyTyAllInOneTM", &TheShaderManager->ShaderConst.AllInOne.TM},
+	//{"TESR_FyTyAllInOneVibrance", &TheShaderManager->ShaderConst.AllInOne.Vibrance},
+	{"TESR_SnowAccumulationParams", &TheShaderManager->ShaderConst.SnowAccumulation.Params},
+	{"TESR_VolumetricFogData", &TheShaderManager->ShaderConst.VolumetricFog.Data},
+	{"TESR_WaterLensData", &TheShaderManager->ShaderConst.WaterLens.Time},
+	{"TESR_WetWorldCoeffs", &TheShaderManager->ShaderConst.WetWorld.Coeffs},
+	{"TESR_WetWorldData", &TheShaderManager->ShaderConst.WetWorld.Data},
+	{"TESR_DebugVar", &TheShaderManager->ShaderConst.DebugVar}
 
-}
+};
 
-/* 
+/*
 Declares the constants that can be accessed from the shader code from the Constant Table, and gives them a readable name.
 */
 void ShaderProgram::SetConstantTableValue(LPCSTR Name, UInt32 Index) {
-	
-	if (!strcmp(Name, "TESR_ToneMapping"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.HDR.ToneMapping;
-	else if (!strcmp(Name, "TESR_ParallaxData"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.POM.ParallaxData;
-	else if (!strcmp(Name, "TESR_GrassScale"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Grass.Scale;
-	else if (!strcmp(Name, "TESR_TerrainData"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Terrain.Data;
-	else if (!strcmp(Name, "TESR_SkinData"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Skin.SkinData;
-	else if (!strcmp(Name, "TESR_SkinColor"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Skin.SkinColor;
-	else if (!strcmp(Name, "TESR_ShadowData"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Shadow.Data;
-	else if (!strcmp(Name, "TESR_ShadowScreenSpaceData"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Shadow.ScreenSpaceData;
-	else if (!strcmp(Name, "TESR_ShadowRadius"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.ShadowMap.ShadowMapRadius;
-	else if (!strcmp(Name, "TESR_OrthoData"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Shadow.OrthoData;
-	else if (!strcmp(Name, "TESR_RainData"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Rain.RainData;
-	else if (!strcmp(Name, "TESR_RainAspect"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Rain.RainAspect;
-	else if (!strcmp(Name, "TESR_SnowData"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Snow.SnowData;
-	else if (!strcmp(Name, "TESR_WorldTransform"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheRenderManager->worldMatrix;
-	else if (!strcmp(Name, "TESR_ViewTransform"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheRenderManager->viewMatrix;
-	else if (!strcmp(Name, "TESR_ProjectionTransform"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheRenderManager->projMatrix;
-	else if (!strcmp(Name, "TESR_InvProjectionTransform"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheRenderManager->InvProjMatrix;
-	else if (!strcmp(Name, "TESR_WorldViewProjectionTransform"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheRenderManager->WorldViewProjMatrix;
-	else if (!strcmp(Name, "TESR_InvViewProjectionTransform"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheRenderManager->InvViewProjMatrix;
-	else if (!strcmp(Name, "TESR_ViewProjectionTransform"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheRenderManager->ViewProjMatrix;
-	else if (!strcmp(Name, "TESR_ViewSpaceLightDir"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ViewSpaceLightDir;
-	else if (!strcmp(Name, "TESR_ScreenSpaceLightDir"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ScreenSpaceLightDir;
-	else if (!strcmp(Name, "TESR_ShadowWorldTransform"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowWorld;
-	else if (!strcmp(Name, "TESR_ShadowViewProjTransform"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowViewProj;
-	else if (!strcmp(Name, "TESR_ShadowCameraToLightTransform"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowCameraToLight;
-	else if (!strcmp(Name, "TESR_ShadowCameraToLightTransformNear"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowCameraToLight[0];
-	else if (!strcmp(Name, "TESR_ShadowCameraToLightTransformMiddle"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowCameraToLight[1];
-	else if (!strcmp(Name, "TESR_ShadowCameraToLightTransformFar"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowCameraToLight[2];
-	else if (!strcmp(Name, "TESR_ShadowCameraToLightTransformLod"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowCameraToLight[3];
-	else if (!strcmp(Name, "TESR_ShadowCameraToLightTransformOrtho"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowCameraToLight[4];
-	else if (!strcmp(Name, "TESR_ShadowCubeMapLightPosition"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.ShadowMap.ShadowCubeMapLightPosition;
-	else if (!strcmp(Name, "TESR_ShadowLightPosition"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowLightPosition;
-	else if (!strcmp(Name, "TESR_ShadowLightPosition0"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowLightPosition[0];
-	else if (!strcmp(Name, "TESR_ShadowLightPosition1"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowLightPosition[1];
-	else if (!strcmp(Name, "TESR_ShadowLightPosition2"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowLightPosition[2];
-	else if (!strcmp(Name, "TESR_ShadowLightPosition3"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowLightPosition[3];
-	else if (!strcmp(Name, "TESR_ShadowLightPosition4"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowLightPosition[4];
-	else if (!strcmp(Name, "TESR_ShadowLightPosition5"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowLightPosition[5];
-	else if (!strcmp(Name, "TESR_ShadowLightPosition6"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowLightPosition[6];
-	else if (!strcmp(Name, "TESR_ShadowLightPosition7"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowLightPosition[7];
-	else if (!strcmp(Name, "TESR_ShadowLightPosition8"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowLightPosition[8];
-	else if (!strcmp(Name, "TESR_ShadowLightPosition9"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowLightPosition[9];
-	else if (!strcmp(Name, "TESR_ShadowLightPosition10"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowLightPosition[10];
-	else if (!strcmp(Name, "TESR_ShadowLightPosition11"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowLightPosition[11];
-	else if (!strcmp(Name, "TESR_LightPosition0"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->LightPosition[0];
-	else if (!strcmp(Name, "TESR_LightPosition1"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->LightPosition[1];
-	else if (!strcmp(Name, "TESR_LightPosition2"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->LightPosition[2];
-	else if (!strcmp(Name, "TESR_LightPosition3"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->LightPosition[3];
-	else if (!strcmp(Name, "TESR_LightPosition4"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->LightPosition[4];
-	else if (!strcmp(Name, "TESR_LightPosition5"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->LightPosition[5];
-	else if (!strcmp(Name, "TESR_LightPosition6"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->LightPosition[6];
-	else if (!strcmp(Name, "TESR_LightPosition7"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->LightPosition[7];
-	else if (!strcmp(Name, "TESR_LightPosition8"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->LightPosition[8];
-	else if (!strcmp(Name, "TESR_LightPosition9"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->LightPosition[9];
-	else if (!strcmp(Name, "TESR_LightPosition10"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->LightPosition[10];
-	else if (!strcmp(Name, "TESR_LightPosition11"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->LightPosition[11];
-	else if (!strcmp(Name, "TESR_LightAttenuation0"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->LightAttenuation[0];
-	else if (!strcmp(Name, "TESR_LightAttenuation1"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->LightAttenuation[1];
-	else if (!strcmp(Name, "TESR_LightAttenuation2"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->LightAttenuation[2];
-	else if (!strcmp(Name, "TESR_LightAttenuation3"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->LightAttenuation[3];
-	else if (!strcmp(Name, "TESR_LightAttenuation4"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->LightAttenuation[4];
-	else if (!strcmp(Name, "TESR_LightAttenuation5"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->LightAttenuation[5];
-	else if (!strcmp(Name, "TESR_LightAttenuation6"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->LightAttenuation[6];
-	else if (!strcmp(Name, "TESR_LightAttenuation7"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->LightAttenuation[7];
-	else if (!strcmp(Name, "TESR_ShadowCubeMapBlend"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.ShadowMap.ShadowCubeMapBlend;
-	else if (!strcmp(Name, "TESR_OcclusionWorldViewProjTransform"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->ShaderConst.OcclusionMap.OcclusionWorldViewProj;
-	else if (!strcmp(Name, "TESR_ReciprocalResolution"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.ReciprocalResolution;
-	else if (!strcmp(Name, "TESR_CameraForward"))
-		FloatShaderValues[Index].Value = &TheRenderManager->CameraForward;
-	else if (!strcmp(Name, "TESR_DepthConstants"))
-		FloatShaderValues[Index].Value = &TheRenderManager->DepthConstants;
-	else if (!strcmp(Name, "TESR_CameraData"))
-		FloatShaderValues[Index].Value = &TheRenderManager->CameraData;
-	else if (!strcmp(Name, "TESR_CameraPosition"))
-		FloatShaderValues[Index].Value = &TheRenderManager->CameraPosition;
-	else if (!strcmp(Name, "TESR_SunDirection"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.SunDir;
-	else if (!strcmp(Name, "TESR_SunTiming"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.SunTiming;
-	else if (!strcmp(Name, "TESR_SunAmount"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.SunAmount;
-	else if (!strcmp(Name, "TESR_ShadowFade"))
-		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowFade;
-	else if (!strcmp(Name, "TESR_GameTime"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.GameTime;
-	else if (!strcmp(Name, "TESR_WaterCoefficients"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Water.waterCoefficients;
-	else if (!strcmp(Name, "TESR_WaveParams"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Water.waveParams;
-	else if (!strcmp(Name, "TESR_WaterVolume"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Water.waterVolume;
-	else if (!strcmp(Name, "TESR_WaterSettings"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Water.waterSettings;
-	else if (!strcmp(Name, "TESR_WaterDeepColor"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Water.deepColor;
-	else if (!strcmp(Name, "TESR_WaterShallowColor"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Water.shallowColor;
-	else if (!strcmp(Name, "TESR_WaterShorelineParams"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Water.shorelineParams;
-	else if (!strcmp(Name, "TESR_FogColor"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.fogColor;
-	else if (!strcmp(Name, "TESR_HorizonColor"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.horizonColor;
-	else if (!strcmp(Name, "TESR_SunColor"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.sunColor;
-	else if (!strcmp(Name, "TESR_SkyColor"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.skyColor;
-	else if (!strcmp(Name, "TESR_SunAmbient"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.sunAmbient;
-	else if (!strcmp(Name, "TESR_FogData"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.fogData;
-	else if (!strcmp(Name, "TESR_FogDistance"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.fogDistance;
-	else if (!strcmp(Name, "TESR_AmbientOcclusionAOData"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.AmbientOcclusion.AOData;
-	else if (!strcmp(Name, "TESR_AmbientOcclusionData"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.AmbientOcclusion.Data;
-	else if (!strcmp(Name, "TESR_BloodLensParams"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.BloodLens.Params;
-	else if (!strcmp(Name, "TESR_BloodLensColor"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.BloodLens.BloodColor;
-	else if (!strcmp(Name, "TESR_BloomData"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Bloom.BloomData;
-	else if (!strcmp(Name, "TESR_BloomValues"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Bloom.BloomValues;
-	else if (!strcmp(Name, "TESR_CinemaData"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Cinema.Data;
-	else if (!strcmp(Name, "TESR_CinemaSettings"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Cinema.Settings;
-	else if (!strcmp(Name, "TESR_ColoringColorCurve"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Coloring.ColorCurve;
-	else if (!strcmp(Name, "TESR_ColoringEffectGamma"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Coloring.EffectGamma;
-	else if (!strcmp(Name, "TESR_ColoringData"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Coloring.Data;
-	else if (!strcmp(Name, "TESR_ColoringValues"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Coloring.Values;
-	else if (!strcmp(Name, "TESR_DepthOfFieldBlur"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.DepthOfField.Blur;
-	else if (!strcmp(Name, "TESR_DepthOfFieldData"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.DepthOfField.Data;
-	else if (!strcmp(Name, "TESR_ExposureData"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Exposure.Data;
-	else if (!strcmp(Name, "TESR_GodRaysRay"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.GodRays.Ray;
-	else if (!strcmp(Name, "TESR_GodRaysRayColor"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.GodRays.RayColor;
-	else if (!strcmp(Name, "TESR_GodRaysData"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.GodRays.Data;
-	else if (!strcmp(Name, "TESR_LensData"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Lens.Data;
-	else if (!strcmp(Name, "TESR_LowHFData"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.LowHF.Data;
-	else if (!strcmp(Name, "TESR_MotionBlurParams"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.MotionBlur.BlurParams;
-	else if (!strcmp(Name, "TESR_MotionBlurData"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.MotionBlur.Data;
-	else if (!strcmp(Name, "TESR_SharpeningData"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Sharpening.Data;
-	else if (!strcmp(Name, "TESR_SpecularData"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Specular.Data;
-	else if (!strcmp(Name, "TESR_SpecularEffects"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Specular.EffectStrength;
-	else if (!strcmp(Name, "TESR_SnowAccumulationParams"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.SnowAccumulation.Params;
-	else if (!strcmp(Name, "TESR_VolumetricFogData"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.VolumetricFog.Data;
-	else if (!strcmp(Name, "TESR_WaterLensData"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.WaterLens.Time;
-	else if (!strcmp(Name, "TESR_WetWorldCoeffs"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.WetWorld.Coeffs;
-	else if (!strcmp(Name, "TESR_WetWorldData"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.WetWorld.Data;
-	else if (!strcmp(Name, "TESR_DebugVar"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.DebugVar;
+
+	if (tableShaderStringsToConstants.contains(Name))
+	{
+		FloatShaderValues[Index].Value = tableShaderStringsToConstants[Name];
+	}
 	else {
 		Logger::Log("Custom constant found: %s", Name);
 		D3DXVECTOR4 v; v.x = v.y = v.z = v.w = 0.0f;
@@ -327,7 +213,7 @@ void ShaderProgram::SetConstantTableValue(LPCSTR Name, UInt32 Index) {
 }
 
 ShaderRecord::ShaderRecord() {
-	
+
 	HasRenderedBuffer = false;
 	HasDepthBuffer = false;
 
@@ -337,26 +223,26 @@ ShaderRecord::~ShaderRecord() {}
 /**
 * @param fileBin the name of the compiled shader file
 * @param fileHlsl the name of the hlsl source file for this shader
-* @param CompileStatus an integer for the status of the compilation. If set to 2, will compare file dates to return status. 
+* @param CompileStatus an integer for the status of the compilation. If set to 2, will compare file dates to return status.
 * @returns wether the shader should be compiled, from a given binary shader and corresponding hlsl.
 */
-bool ShaderProgram::ShouldCompileShader(const char* fileBin, const char* fileHlsl, ShaderCompileType CompileStatus){
-	if(CompileStatus == ShaderCompileType::AlwaysOn) return  true;
-	if(CompileStatus == ShaderCompileType::AlwaysOff) return  false;
-	if(CompileStatus == ShaderCompileType::RecompileInMenu) return TheShaderManager->IsMenuSwitch ? true : false;
+bool ShaderProgram::ShouldCompileShader(const char* fileBin, const char* fileHlsl, ShaderCompileType CompileStatus) {
+	if (CompileStatus == ShaderCompileType::AlwaysOn) return  true;
+	if (CompileStatus == ShaderCompileType::AlwaysOff) return  false;
+	if (CompileStatus == ShaderCompileType::RecompileInMenu) return TheShaderManager->IsMenuSwitch ? true : false;
 
-	if(CompileStatus == ShaderCompileType::RecompileChanged) {
-		WIN32_FILE_ATTRIBUTE_DATA attributesBin = {0};
-		WIN32_FILE_ATTRIBUTE_DATA attributesSource = {0};
+	if (CompileStatus == ShaderCompileType::RecompileChanged) {
+		WIN32_FILE_ATTRIBUTE_DATA attributesBin = { 0 };
+		WIN32_FILE_ATTRIBUTE_DATA attributesSource = { 0 };
 		BOOL hr = GetFileAttributesExA(fileBin, GetFileExInfoStandard, &attributesBin); // from winbase.h
-		if(hr == FALSE) {
-// 			Logger::Log("File %s not present, compile", fileHlsl);
+		if (hr == FALSE) {
+			// 			Logger::Log("File %s not present, compile", fileHlsl);
 			return true; //File not present compile
 		}
-		else{
+		else {
 			BOOL hr = GetFileAttributesExA(fileHlsl, GetFileExInfoStandard, &attributesSource); // from winbase.h
-			if(hr == FALSE) {
-//				Logger::Log("[ERROR] Can't open source %s", fileHlsl);
+			if (hr == FALSE) {
+				//				Logger::Log("[ERROR] Can't open source %s", fileHlsl);
 				return true; //BOH
 			}
 
@@ -366,7 +252,7 @@ bool ShaderProgram::ShouldCompileShader(const char* fileBin, const char* fileHls
 			timeSource.LowPart = attributesSource.ftLastWriteTime.dwLowDateTime;
 			timeSource.HighPart = attributesSource.ftLastWriteTime.dwHighDateTime;
 
-			if(timeBin.QuadPart < timeSource.QuadPart){
+			if (timeBin.QuadPart < timeSource.QuadPart) {
 				Logger::Log("Binary older then source, compile %s", fileHlsl);
 				return true;
 			}
@@ -375,7 +261,7 @@ bool ShaderProgram::ShouldCompileShader(const char* fileBin, const char* fileHls
 	return false;
 }
 
-/* 
+/*
 Loads the shader by name from a given subfolder (optionally). Shader will be compiled if needed.
 @returns the ShaderRecord for this shader.
 */
@@ -428,15 +314,15 @@ ShaderRecord* ShaderRecord::LoadShader(const char* Name, const char* SubPath) {
 	else if (!memcmp(Name, "Bink", 4)) {
 		strcat(FileName, "Bink\\");
 	}
-	else if(!TheSettingManager->SettingsMain.Shaders.Extra) return NULL;
-    
+	else if (!TheSettingManager->SettingsMain.Shaders.Extra) return NULL;
+
 	if (SubPath) strcat(FileName, SubPath);
 	strcat(FileName, Name);
 	strcpy(FileNameBinary, FileName);
 	strcat(FileName, ".hlsl");
 
-    HRESULT prepass = D3DXPreprocessShaderFromFileA(FileName, NULL, NULL, &ShaderSource , &Errors);
-	bool Compile = ShouldCompileShader(FileNameBinary, FileName, (ShaderCompileType) TheSettingManager->SettingsMain.Develop.CompileShaders);
+	HRESULT prepass = D3DXPreprocessShaderFromFileA(FileName, NULL, NULL, &ShaderSource, &Errors);
+	bool Compile = ShouldCompileShader(FileNameBinary, FileName, (ShaderCompileType)TheSettingManager->SettingsMain.Develop.CompileShaders);
 	if (prepass == D3D_OK) {
 		if (strstr(Name, ".vso"))
 			strcpy(ShaderProfile, "vs_3_0");
@@ -510,17 +396,17 @@ void ShaderRecord::CreateCT(ID3DXBuffer* ShaderSource, ID3DXConstantTable* Const
 	UInt32 TextureIndex = 0;
 
 	ConstantTable->GetDesc(&ConstantTableDesc);
-    for (UINT c = 0; c < ConstantTableDesc.Constants; c++) {
+	for (UINT c = 0; c < ConstantTableDesc.Constants; c++) {
 		Handle = ConstantTable->GetConstant(NULL, c);
 		ConstantTable->GetConstantDesc(Handle, &ConstantDesc, &ConstantCount);
 		if (ConstantDesc.RegisterSet == D3DXRS_FLOAT4 && !memcmp(ConstantDesc.Name, "TESR_", 5)) FloatShaderValuesCount += 1;
 		if (ConstantDesc.RegisterSet == D3DXRS_SAMPLER && !memcmp(ConstantDesc.Name, "TESR_", 5)) TextureShaderValuesCount += 1;
-    }
+	}
 
 	auto timer = TimeLogger();
-	FloatShaderValues = new ShaderValue [FloatShaderValuesCount];
-	TextureShaderValues = new ShaderValue [TextureShaderValuesCount];
-	
+	FloatShaderValues = new ShaderValue[FloatShaderValuesCount];
+	TextureShaderValues = new ShaderValue[TextureShaderValuesCount];
+
 	// Should be better but still crashes with NVHR -- TODO: Check how to fix it
 	//if (FloatShaderValuesCount) FloatShaderValues = (ShaderValue*)Pointers::Functions::FormMemoryAlloc(FloatShaderValuesCount * sizeof(ShaderValue));
 	//if (TextureShaderValuesCount) TextureShaderValues = (ShaderValue*)Pointers::Functions::FormMemoryAlloc(TextureShaderValuesCount * sizeof(ShaderValue));
@@ -534,18 +420,18 @@ void ShaderRecord::CreateCT(ID3DXBuffer* ShaderSource, ID3DXConstantTable* Const
 		ConstantTable->GetConstantDesc(Handle, &ConstantDesc, &ConstantCount);
 		if (!memcmp(ConstantDesc.Name, "TESR_", 5)) {
 			switch (ConstantDesc.RegisterSet) {
-				case D3DXRS_FLOAT4:
-					SetConstantTableValue(ConstantDesc.Name, FloatIndex);
-					FloatShaderValues[FloatIndex].RegisterIndex = ConstantDesc.RegisterIndex;
-					FloatShaderValues[FloatIndex].RegisterCount = ConstantDesc.RegisterCount;
-					FloatIndex++;
- 					break;
-				case D3DXRS_SAMPLER:
-					TextureShaderValues[TextureIndex].Texture = TheTextureManager->LoadTexture(ShaderSource, ConstantDesc.Type, ConstantDesc.Name, ConstantDesc.RegisterIndex, &HasRenderedBuffer, &HasDepthBuffer);
-					TextureShaderValues[TextureIndex].RegisterIndex = ConstantDesc.RegisterIndex;
-					TextureShaderValues[TextureIndex].RegisterCount = 1;
-					TextureIndex++;
-					break;
+			case D3DXRS_FLOAT4:
+				SetConstantTableValue(ConstantDesc.Name, FloatIndex);
+				FloatShaderValues[FloatIndex].RegisterIndex = ConstantDesc.RegisterIndex;
+				FloatShaderValues[FloatIndex].RegisterCount = ConstantDesc.RegisterCount;
+				FloatIndex++;
+				break;
+			case D3DXRS_SAMPLER:
+				TextureShaderValues[TextureIndex].Texture = TheTextureManager->LoadTexture(ShaderSource, ConstantDesc.Type, ConstantDesc.Name, ConstantDesc.RegisterIndex, &HasRenderedBuffer, &HasDepthBuffer);
+				TextureShaderValues[TextureIndex].RegisterIndex = ConstantDesc.RegisterIndex;
+				TextureShaderValues[TextureIndex].RegisterCount = 1;
+				TextureIndex++;
+				break;
 			}
 		}
 	}
@@ -553,7 +439,7 @@ void ShaderRecord::CreateCT(ID3DXBuffer* ShaderSource, ID3DXConstantTable* Const
 	timer.LogTime("ShaderRecord::createCT Done");
 }
 
-/* 
+/*
 * Sets the Constant Table for the shader
 */
 void ShaderRecord::SetCT() {
@@ -578,7 +464,7 @@ void ShaderRecord::SetCT() {
 
 
 ShaderRecordVertex::ShaderRecordVertex() {
-	
+
 	ShaderHandle = NULL;
 
 }
@@ -590,26 +476,26 @@ ShaderRecordVertex::~ShaderRecordVertex() {
 }
 
 ShaderRecordPixel::ShaderRecordPixel() {
-	
+
 	ShaderHandle = NULL;
 
 }
 
 ShaderRecordPixel::~ShaderRecordPixel() {
-	
+
 	ShaderHandle->Release();
 
 }
 
 
 void ShaderRecordVertex::SetShaderConstantF(UInt32 RegisterIndex, D3DXVECTOR4* Value, UInt32 RegisterCount) {
-	
+
 	TheRenderManager->device->SetVertexShaderConstantF(RegisterIndex, (const float*)Value, RegisterCount);
 
 }
 
 void ShaderRecordPixel::SetShaderConstantF(UInt32 RegisterIndex, D3DXVECTOR4* Value, UInt32 RegisterCount) {
-	
+
 	TheRenderManager->device->SetPixelShaderConstantF(RegisterIndex, (const float*)Value, RegisterCount);
 
 }
@@ -633,7 +519,7 @@ EffectRecord::~EffectRecord() {
 /*
  * Unload effects, allowing it to be reloaded from  a blank state.
  */
-void EffectRecord::DisposeEffect(){
+void EffectRecord::DisposeEffect() {
 	if (Effect) Effect->Release();
 	Effect = nullptr;
 	delete[] FloatShaderValues;
@@ -644,30 +530,30 @@ void EffectRecord::DisposeEffect(){
 /*
  * Compile and Load the Effect shader
  */
-bool EffectRecord::LoadEffect(bool alwaysCompile){
+bool EffectRecord::LoadEffect(bool alwaysCompile) {
 	auto timer = TimeLogger();
 
 	ID3DXBuffer* ShaderSource = NULL;
 	ID3DXBuffer* Errors = NULL;
 	ID3DXEffect* Effect = NULL;
 	bool success = false;
-    HRESULT prepass = D3DXPreprocessShaderFromFileA(SourcePath->data(), NULL, NULL, &ShaderSource , &Errors);
+	HRESULT prepass = D3DXPreprocessShaderFromFileA(SourcePath->data(), NULL, NULL, &ShaderSource, &Errors);
 	ID3DXEffectCompiler* Compiler = NULL;
 	ID3DXBuffer* EffectBuffer = NULL;
 	HRESULT load = NULL;
 
-	if(alwaysCompile || ShouldCompileShader(Path->data(), SourcePath->data(), (ShaderCompileType)TheSettingManager->SettingsMain.Develop.CompileEffects) ){
-		HRESULT comp  = D3DXCreateEffectCompilerFromFileA(SourcePath->data(), NULL, NULL, NULL, &Compiler, &Errors);
-		if(FAILED(comp)) goto cleanup;
-		if (Errors){
+	if (alwaysCompile || ShouldCompileShader(Path->data(), SourcePath->data(), (ShaderCompileType)TheSettingManager->SettingsMain.Develop.CompileEffects)) {
+		HRESULT comp = D3DXCreateEffectCompilerFromFileA(SourcePath->data(), NULL, NULL, NULL, &Compiler, &Errors);
+		if (FAILED(comp)) goto cleanup;
+		if (Errors) {
 			Logger::Log((char*)Errors->GetBufferPointer());
 			Errors->Release();
 			Errors = nullptr;
 		}
 
 		HRESULT compiled = Compiler->CompileEffect(NULL, &EffectBuffer, &Errors);
-		if(FAILED(compiled)) goto cleanup;
-		if (Errors){
+		if (FAILED(compiled)) goto cleanup;
+		if (Errors) {
 			Logger::Log((char*)Errors->GetBufferPointer());
 			Errors->Release();
 			Errors = nullptr;
@@ -682,7 +568,7 @@ bool EffectRecord::LoadEffect(bool alwaysCompile){
 		}
 	}
 	load = D3DXCreateEffectFromFileA(TheRenderManager->device, Path->data(), NULL, NULL, NULL, NULL, &Effect, &Errors);
-	if(FAILED(load)) goto cleanup;
+	if (FAILED(load)) goto cleanup;
 
 	if (Errors) Logger::Log((char*)Errors->GetBufferPointer()); // LAst can be cleaned in the cleanup section
 	if (Effect) {
@@ -697,7 +583,7 @@ cleanup:
 	if (Compiler) Compiler->Release();
 
 	if (ShaderSource) ShaderSource->Release();
-	if (Errors){
+	if (Errors) {
 		Logger::Log((char*)Errors->GetBufferPointer());
 		Errors->Release();
 	}
@@ -713,7 +599,7 @@ cleanup:
 * @returns an EffectRecord describing the effect shader.
 */
 EffectRecord* EffectRecord::LoadEffect(const char* Name) {
-	
+
 	char FileName[MAX_PATH];
 
 	strcpy(FileName, Name);
@@ -725,12 +611,12 @@ EffectRecord* EffectRecord::LoadEffect(const char* Name) {
 	return EffectProg;
 }
 
-bool EffectRecord::IsLoaded(){
-	return Effect != nullptr; 
+bool EffectRecord::IsLoaded() {
+	return Effect != nullptr;
 }
 
 /**
-Creates the Constant Table for the Effect Record. 
+Creates the Constant Table for the Effect Record.
 */
 void EffectRecord::CreateCT(ID3DXBuffer* ShaderSource, ID3DXConstantTable* ConstantTable) {
 	auto timer = TimeLogger();
@@ -759,21 +645,21 @@ void EffectRecord::CreateCT(ID3DXBuffer* ShaderSource, ID3DXConstantTable* Const
 		Effect->GetParameterDesc(Handle, &ConstantDesc);
 		if (!memcmp(ConstantDesc.Name, "TESR_", 5)) {
 			switch (ConstantDesc.Class) {
-				case D3DXPC_VECTOR:
-				case D3DXPC_MATRIX_ROWS:
-					SetConstantTableValue(ConstantDesc.Name, FloatIndex);
-					FloatShaderValues[FloatIndex].RegisterIndex = (UInt32)Handle;
-					FloatShaderValues[FloatIndex].RegisterCount = ConstantDesc.Rows;
-					FloatIndex++;
-					break;
-				case D3DXPC_OBJECT:
-					if (ConstantDesc.Class == D3DXPC_OBJECT && ConstantDesc.Type >= D3DXPT_SAMPLER && ConstantDesc.Type <= D3DXPT_SAMPLERCUBE) {
-						TextureShaderValues[TextureIndex].Texture = TheTextureManager->LoadTexture(ShaderSource, ConstantDesc.Type, ConstantDesc.Name, TextureIndex, NULL, NULL);
-						TextureShaderValues[TextureIndex].RegisterIndex = TextureIndex;
-						TextureShaderValues[TextureIndex].RegisterCount = 1;
-						TextureIndex++;
-					}
-					break;
+			case D3DXPC_VECTOR:
+			case D3DXPC_MATRIX_ROWS:
+				SetConstantTableValue(ConstantDesc.Name, FloatIndex);
+				FloatShaderValues[FloatIndex].RegisterIndex = (UInt32)Handle;
+				FloatShaderValues[FloatIndex].RegisterCount = ConstantDesc.Rows;
+				FloatIndex++;
+				break;
+			case D3DXPC_OBJECT:
+				if (ConstantDesc.Class == D3DXPC_OBJECT && ConstantDesc.Type >= D3DXPT_SAMPLER && ConstantDesc.Type <= D3DXPT_SAMPLERCUBE) {
+					TextureShaderValues[TextureIndex].Texture = TheTextureManager->LoadTexture(ShaderSource, ConstantDesc.Type, ConstantDesc.Name, TextureIndex, NULL, NULL);
+					TextureShaderValues[TextureIndex].RegisterIndex = TextureIndex;
+					TextureShaderValues[TextureIndex].RegisterCount = 1;
+					TextureIndex++;
+				}
+				break;
 			}
 		}
 	}
@@ -806,9 +692,9 @@ void EffectRecord::SetCT() {
 /*
  * Enable or Disable Effect, with reloading it if it's changed on disk
  */
-bool EffectRecord::SwitchEffect(){
+bool EffectRecord::SwitchEffect() {
 	bool change = true;
-	if (!IsLoaded() || (!Enabled && ShouldCompileShader(Path->data(), SourcePath->data(), ShaderCompileType::RecompileChanged)) ) {
+	if (!IsLoaded() || (!Enabled && ShouldCompileShader(Path->data(), SourcePath->data(), ShaderCompileType::RecompileChanged))) {
 		Logger::Log("Effect %s is not loaded", Path->data());
 		DisposeEffect();
 		change = LoadEffect(true);
@@ -911,19 +797,19 @@ void ShaderManager::Initialize() {
 	TheShaderManager->ShaderConst.ReciprocalResolution.w = 0.0f; // Reserved to store the FoV
 	TheShaderManager->CreateFrameVertex(TheRenderManager->width, TheRenderManager->height, &TheShaderManager->FrameVertex);
 
-    TheShaderManager->PreviousCell = nullptr;
-    TheShaderManager->IsMenuSwitch = false;
+	TheShaderManager->PreviousCell = nullptr;
+	TheShaderManager->IsMenuSwitch = false;
 
 	timer.LogTime("ShaderManager::Initialize");
 
 }
 
 void ShaderManager::CreateFrameVertex(UInt32 Width, UInt32 Height, IDirect3DVertexBuffer9** FrameVertex) {
-	
+
 	void* VertexData = NULL;
 	float OffsetX = (1.0f / (float)Width) * 0.5f;
 	float OffsetY = (1.0f / (float)Height) * 0.5f;
-	
+
 	FrameVS FrameVertices[] = {
 		{ -1.0f,  1.0f, 1.0f, 0.0f + OffsetX, 0.0f + OffsetY },
 		{ -1.0f, -1.0f, 1.0f, 0.0f + OffsetX, 1.0f + OffsetY },
@@ -990,7 +876,7 @@ void ShaderManager::InitializeConstants() {
 Updates the values of the constants that can be accessed from shader code, with values representing the state of the game's elements.
 */
 void ShaderManager::UpdateConstants() {
-	
+
 	auto timer = TimeLogger();
 
 	bool IsThirdPersonView = !TheCameraManager->IsFirstPerson();
@@ -1106,7 +992,7 @@ void ShaderManager::UpdateConstants() {
 				// map MoonVisibility to MinNightDarkness/1 range
 				float nightMinDarkness = TheSettingManager->GetSettingF("Shaders.ShadowsExteriors.Main", "NightMinDarkness");
 				float MoonVisibility = lerp(0.0, (double)nightMinDarkness, cos(MoonPhase) * 0.5 + 0.5);
-				ShaderConst.ShadowFade.x = lerp (MoonVisibility, 1, ShaderConst.ShadowFade.x);
+				ShaderConst.ShadowFade.x = lerp(MoonVisibility, 1, ShaderConst.ShadowFade.x);
 			}
 
 			// pass the enabled/disabled property of the shadow maps to the shadowfade constant
@@ -1229,7 +1115,7 @@ void ShaderManager::UpdateConstants() {
 			RGBA* rgba = NULL;
 			SettingsWaterStruct* sws = NULL;
 			TESWaterForm* currentWater = currentCell->GetWaterForm();
-			
+
 			sectionName = "Shaders.Water.Default";
 			if (currentWater) {
 				UInt32 WaterType = currentWater->GetWaterType();
@@ -1270,9 +1156,9 @@ void ShaderManager::UpdateConstants() {
 			ShaderConst.Water.waterVolume.y = TheSettingManager->GetSettingF(sectionName, "shoreFactor");
 			ShaderConst.Water.waterVolume.z = TheSettingManager->GetSettingF(sectionName, "turbidity");
 			ShaderConst.Water.waterVolume.w = TheSettingManager->GetSettingF(sectionName, "causticsStrengthS");
-			
+
 			ShaderConst.Water.shorelineParams.x = TheSettingManager->GetSettingF(sectionName, "shoreMovement");
-		}		
+		}
 
 		if (isUnderwater) {
 			ShaderConst.BloodLens.Percent = 0.0f;
@@ -1295,7 +1181,7 @@ void ShaderManager::UpdateConstants() {
 			ShaderConst.WaterLens.Percent = ShaderConst.Animators.WaterLensAnimator.GetValue();
 			ShaderConst.WaterLens.Time.w = TheSettingManager->GetSettingF("Shaders.WaterLens.Main", "Amount") * ShaderConst.WaterLens.Percent;
 		}
-			
+
 		if (isExterior) {
 			// Rain fall & puddles
 			if (isRainy && ShaderConst.Animators.RainAnimator.switched == false) {
@@ -1374,46 +1260,46 @@ void ShaderManager::UpdateConstants() {
 				if (ShaderConst.SnowAccumulation.Params.w) orthoRequired = true; // mark ortho map calculation as necessary
 			}
 		}
-		
+
 		if (TheSettingManager->GetMenuShaderEnabled("Grass")) {
 			ShaderConst.Grass.Scale.x = TheSettingManager->GetSettingF("Shaders.Grass.Main", "ScaleX");
 			ShaderConst.Grass.Scale.y = TheSettingManager->GetSettingF("Shaders.Grass.Main", "ScaleY");
 			ShaderConst.Grass.Scale.z = TheSettingManager->GetSettingF("Shaders.Grass.Main", "ScaleZ");
 			switch (TheSettingManager->GetSettingI("Shaders.Grass.Main", "GrassDensity")) {
-				case 1:
-					*Pointers::Settings::MinGrassSize = 240;
-					*Pointers::Settings::TexturePctThreshold = 0.3f;
-					break;
-				case 2:
-					*Pointers::Settings::MinGrassSize = 240;
-					*Pointers::Settings::TexturePctThreshold = 0.2f;
-					break;
-				case 3:
-					*Pointers::Settings::MinGrassSize = 120;
-					*Pointers::Settings::TexturePctThreshold = 0.3f;
-					break;
-				case 4:
-					*Pointers::Settings::MinGrassSize = 120;
-					*Pointers::Settings::TexturePctThreshold = 0.2f;
-					break;
-				case 5:
-					*Pointers::Settings::MinGrassSize = 80;
-					*Pointers::Settings::TexturePctThreshold = 0.3f;
-					break;
-				case 6:
-					*Pointers::Settings::MinGrassSize = 80;
-					*Pointers::Settings::TexturePctThreshold = 0.2f;
-					break;
-				case 7:
-					*Pointers::Settings::MinGrassSize = 20;
-					*Pointers::Settings::TexturePctThreshold = 0.3f;
-					break;
-				case 8:
-					*Pointers::Settings::MinGrassSize = 20;
-					*Pointers::Settings::TexturePctThreshold = 0.2f;
-					break;
-				default:
-					break;
+			case 1:
+				*Pointers::Settings::MinGrassSize = 240;
+				*Pointers::Settings::TexturePctThreshold = 0.3f;
+				break;
+			case 2:
+				*Pointers::Settings::MinGrassSize = 240;
+				*Pointers::Settings::TexturePctThreshold = 0.2f;
+				break;
+			case 3:
+				*Pointers::Settings::MinGrassSize = 120;
+				*Pointers::Settings::TexturePctThreshold = 0.3f;
+				break;
+			case 4:
+				*Pointers::Settings::MinGrassSize = 120;
+				*Pointers::Settings::TexturePctThreshold = 0.2f;
+				break;
+			case 5:
+				*Pointers::Settings::MinGrassSize = 80;
+				*Pointers::Settings::TexturePctThreshold = 0.3f;
+				break;
+			case 6:
+				*Pointers::Settings::MinGrassSize = 80;
+				*Pointers::Settings::TexturePctThreshold = 0.2f;
+				break;
+			case 7:
+				*Pointers::Settings::MinGrassSize = 20;
+				*Pointers::Settings::TexturePctThreshold = 0.3f;
+				break;
+			case 8:
+				*Pointers::Settings::MinGrassSize = 20;
+				*Pointers::Settings::TexturePctThreshold = 0.2f;
+				break;
+			default:
+				break;
 			}
 
 			float minDistance = TheSettingManager->GetSettingF("Shaders.Grass.Main", "MinDistance");
@@ -1439,14 +1325,14 @@ void ShaderManager::UpdateConstants() {
 			ShaderConst.POM.ParallaxData.y = TheSettingManager->GetSettingF("Shaders.POM.Main", "MinSamples");
 			ShaderConst.POM.ParallaxData.z = TheSettingManager->GetSettingF("Shaders.POM.Main", "MaxSamples");
 		}
-	
+
 		if (TheSettingManager->GetMenuShaderEnabled("Terrain")) {
-			ShaderConst.Terrain.Data.x = TheSettingManager->GetSettingF("Shaders.Terrain.Main", "DistantSpecular"); 
+			ShaderConst.Terrain.Data.x = TheSettingManager->GetSettingF("Shaders.Terrain.Main", "DistantSpecular");
 			ShaderConst.Terrain.Data.y = TheSettingManager->GetSettingF("Shaders.Terrain.Main", "DistantNoise");
 			ShaderConst.Terrain.Data.z = TheSettingManager->GetSettingF("Shaders.Terrain.Main", "NearSpecular");
 			ShaderConst.Terrain.Data.w = TheSettingManager->GetSettingF("Shaders.Terrain.Main", "MiddleSpecular");
 		}
-	
+
 		if (TheSettingManager->GetMenuShaderEnabled("Skin")) {
 			ShaderConst.Skin.SkinData.x = TheSettingManager->GetSettingF("Shaders.Skin.Main", "Attenuation");
 			ShaderConst.Skin.SkinData.y = TheSettingManager->GetSettingF("Shaders.Skin.Main", "SpecularPower");
@@ -1477,7 +1363,7 @@ void ShaderManager::UpdateConstants() {
 
 			float dayMult = TheSettingManager->GetSettingF("Shaders.GodRays.Main", "DayMultiplier");
 			float nightMult = TheSettingManager->GetSettingF("Shaders.GodRays.Main", "NightMultiplier");
-			ShaderConst.GodRays.Data.z = isDayTime>0?dayMult:nightMult;
+			ShaderConst.GodRays.Data.z = isDayTime > 0 ? dayMult : nightMult;
 
 			ShaderConst.GodRays.Data.w = TheSettingManager->GetSettingF("Shaders.GodRays.Main", "TimeEnabled");
 		}
@@ -1590,20 +1476,20 @@ void ShaderManager::UpdateConstants() {
 				sectionName = "Shaders.DepthOfField.ThirdPersonView";
 
 			bool dofActive = TheSettingManager->GetSettingI(sectionName, "Enabled");
-			switch (TheSettingManager->GetSettingI(sectionName, "Mode")){
-				case 1:
-					if (isDialog || isPersuasion) dofActive = false;
-					break;
-				case 2:
-					if (!isDialog) dofActive = false;
-					break;
-				case 3:
-					if (!isPersuasion) dofActive = false;
-					break;
-				case 4:
-					if (!isDialog && !isPersuasion) dofActive = false;
-				default:
-					break;
+			switch (TheSettingManager->GetSettingI(sectionName, "Mode")) {
+			case 1:
+				if (isDialog || isPersuasion) dofActive = false;
+				break;
+			case 2:
+				if (!isDialog) dofActive = false;
+				break;
+			case 3:
+				if (!isPersuasion) dofActive = false;
+				break;
+			case 4:
+				if (!isDialog && !isPersuasion) dofActive = false;
+			default:
+				break;
 			}
 
 			if (ShaderConst.DepthOfField.Enabled = dofActive) {
@@ -1625,20 +1511,20 @@ void ShaderManager::UpdateConstants() {
 			ShaderConst.Cinema.Data.x = TheSettingManager->GetSettingF("Shaders.Cinema.Main", "AspectRatio");
 			ShaderConst.Cinema.Data.y = TheSettingManager->GetSettingF("Shaders.Cinema.Main", "VignetteRadius");
 			switch (Mode) {
-				case 1:
-					if (isDialog || isPersuasion) Mode = -1; // disabled during dialog an persuation menus
-					break;
-				case 2:
-					if (!isDialog) Mode = -1;
-					break;
-				case 3:
-					if (!isPersuasion) Mode = -1;
-					break;
-				case 4:
-					if (!isDialog && !isPersuasion) Mode = -1;
-					break;
-				default:
-					break;
+			case 1:
+				if (isDialog || isPersuasion) Mode = -1; // disabled during dialog an persuation menus
+				break;
+			case 2:
+				if (!isDialog) Mode = -1;
+				break;
+			case 3:
+				if (!isPersuasion) Mode = -1;
+				break;
+			case 4:
+				if (!isDialog && !isPersuasion) Mode = -1;
+				break;
+			default:
+				break;
 			}
 			if (Mode == -1) {
 				ShaderConst.Cinema.Data.x = ShaderConst.ReciprocalResolution.z; // set cinema aspect ratio to native ar
@@ -1646,7 +1532,7 @@ void ShaderManager::UpdateConstants() {
 			}
 			ShaderConst.Cinema.Data.z = TheSettingManager->GetSettingF("Shaders.Cinema.Main", "VignetteDarkness");
 			ShaderConst.Cinema.Data.w = TheSettingManager->GetSettingF("Shaders.Cinema.Main", "OverlayStrength");
-			ShaderConst.Cinema.Settings.x = isUnderwater?0:TheSettingManager->GetSettingF("Shaders.Cinema.Main", "DirtLensAmount"); // disable dirt lens underwater
+			ShaderConst.Cinema.Settings.x = isUnderwater ? 0 : TheSettingManager->GetSettingF("Shaders.Cinema.Main", "DirtLensAmount"); // disable dirt lens underwater
 			ShaderConst.Cinema.Settings.y = TheSettingManager->GetSettingF("Shaders.Cinema.Main", "FilmGrainAmount");
 			ShaderConst.Cinema.Settings.z = TheSettingManager->GetSettingF("Shaders.Cinema.Main", "ChromaticAberration");
 		}
@@ -1692,7 +1578,7 @@ void ShaderManager::UpdateConstants() {
 
 		if (Effects.Lens->Enabled) {
 			ShaderConst.Lens.Data.x = TheSettingManager->GetSettingF("Shaders.Lens.Main", "DirtLensAmount");
-			ShaderConst.Lens.Data.y = isExterior? TheSettingManager->GetSettingF("Shaders.Lens.Main", "ExteriorBloomTreshold"): ShaderConst.Lens.Data.y = TheSettingManager->GetSettingF("Shaders.Lens.Main", "InteriorBloomTreshold");
+			ShaderConst.Lens.Data.y = isExterior ? TheSettingManager->GetSettingF("Shaders.Lens.Main", "ExteriorBloomTreshold") : ShaderConst.Lens.Data.y = TheSettingManager->GetSettingF("Shaders.Lens.Main", "InteriorBloomTreshold");
 		}
 
 		if (Effects.Exposure->Enabled) {
@@ -1746,7 +1632,7 @@ void ShaderManager::UpdateConstants() {
 }
 
 bool ShaderManager::CreateShader(const char* Name) {
-	
+
 	NiD3DVertexShader** Vertex = NULL;
 	NiD3DPixelShader** Pixel = NULL;
 	int WaterVertexShadersSize = sizeof(WaterVertexShaders) / 4;
@@ -1797,11 +1683,11 @@ bool ShaderManager::CreateShader(const char* Name) {
 * Load generic Vertex Shaders as well as the ones for interiors and exteriors if the exist. Returns false if generic one isn't found (as other ones are optional)
 */
 bool ShaderManager::LoadShader(NiD3DVertexShader* Shader) {
-	
+
 	NiD3DVertexShaderEx* VertexShader = (NiD3DVertexShaderEx*)Shader;
-	
+
 	// Load generic, interior and exterior shaders
-	VertexShader->ShaderProg  = (ShaderRecordVertex*)ShaderRecord::LoadShader(VertexShader->ShaderName, NULL);
+	VertexShader->ShaderProg = (ShaderRecordVertex*)ShaderRecord::LoadShader(VertexShader->ShaderName, NULL);
 	VertexShader->ShaderProgE = (ShaderRecordVertex*)ShaderRecord::LoadShader(VertexShader->ShaderName, "Exteriors\\");
 	VertexShader->ShaderProgI = (ShaderRecordVertex*)ShaderRecord::LoadShader(VertexShader->ShaderName, "Interiors\\");
 
@@ -1815,7 +1701,7 @@ bool ShaderManager::LoadShader(NiD3DPixelShader* Shader) {
 
 	NiD3DPixelShaderEx* PixelShader = (NiD3DPixelShaderEx*)Shader;
 
-	PixelShader->ShaderProg  = (ShaderRecordPixel*)ShaderRecord::LoadShader(PixelShader->ShaderName, NULL);
+	PixelShader->ShaderProg = (ShaderRecordPixel*)ShaderRecord::LoadShader(PixelShader->ShaderName, NULL);
 	PixelShader->ShaderProgE = (ShaderRecordPixel*)ShaderRecord::LoadShader(PixelShader->ShaderName, "Exteriors\\");
 	PixelShader->ShaderProgI = (ShaderRecordPixel*)ShaderRecord::LoadShader(PixelShader->ShaderName, "Interiors\\");
 
@@ -1865,7 +1751,7 @@ void ShaderManager::DisposeShader(const char* Name) {
 * Loads an Effect Shader from the corresponding fx file based on the Effect Record effect Type.
 */
 EffectRecord* ShaderManager::CreateEffect(const char* Name, bool setEnabled) {
-	
+
 	char Filename[MAX_PATH];
 	strcpy(Filename, EffectsPath);
 	strcat(Filename, Name);
@@ -1914,7 +1800,7 @@ EffectRecord* ShaderManager::CreateEffect(const char* Name, bool setEnabled) {
 }
 
 /*
-* Deletes an Effect based on the Effect Record effect type. 
+* Deletes an Effect based on the Effect Record effect type.
 */
 void ShaderManager::DisposeEffect(EffectRecord** Effect) {
 	*Effect = NULL;
@@ -2076,7 +1962,7 @@ void ShaderManager::SwitchShaderStatus(const char* Name) {
 		bool setting = effect->SwitchEffect();
 		TheSettingManager->SetMenuShaderEnabled(Name, setting);
 	}
-	catch (std::exception e){
+	catch (std::exception e) {
 		// shaders
 		Logger::Log("Toggling Shader %s", Name);
 		bool enable = !TheSettingManager->GetMenuShaderEnabled(Name);
