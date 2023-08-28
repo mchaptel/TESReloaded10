@@ -114,6 +114,88 @@ CoeffSunR = 1.0
 [_Main.WeatherMode.Main]
 Enabled = false
 
+[_Shaders.AllInOne.Status]
+Enabled = false
+
+[_Shaders.AllInOne.Desaturation]
+DesatRed_Day = 1.0
+DesatRed_Night = 1.0
+DesatRed_Interior = 1.0
+DesatGreen_Day = 0.1
+DesatGreen_Night = 0.1
+DesatGreen_Int = 0.15
+DesatBlue_Day = 0.6
+DesatBlue_Night = 0.65
+DesatBlue_Int = 0.7
+
+[_Shaders.AllInOne.GammaFilter]
+RedFilter_Day = 0.99
+RedFilter_Night = 1.0
+RedFilter_Int = 1.0
+GreenFilter_Day = 1.0
+GreenFilter_Night = 1.0
+GreenFilter_Int = 1.0
+BlueFilter_Day = 1.0
+BlueFilter_Night = 0.98
+BlueFilter_Int = 1.0
+Gamma_Day = 1.2
+Gamma_Night = 1.2
+Gamma_Int = 1.2
+
+[_Shaders.AllInOne.ColorFilter]
+ColorFilter_UseColorSaturation = false
+ColorFilter_HueMid = 0.45
+ColorFilter_HueRange = 0.50
+ColorFilter_SaturationLimit = 1.00
+ColorFilter_Strength = 0.18
+
+[_Shaders.AllInOne.Adaptation]
+Adaptation_Min_Day = 0.25
+Adaptation_Max_Day = 0.25
+Adaptation_Min_Night = 0.15
+Adaptation_Max_Night = 0.15
+Adaptation_Min_Interior = 0.15
+Adaptation_Max_Interior = 0.15
+
+[_Shaders.AllInOne.Brightness]
+Day = 1.00
+Night = 1.00
+Int = 1.00
+
+[_Shaders.AllInOne.TMIntensityContrast]
+Day = 1.00
+Night = 1.05
+Int = 1.05
+
+[_Shaders.AllInOne.Saturation]
+Day = 1.70
+Night = 2.00
+Int = 2.00
+
+[_Shaders.AllInOne.TMCurve]
+Day = 1.50
+Night = 1.75
+Int = 2.00
+
+[_Shaders.AllInOne.Oversaturation]
+Day = 200.0
+Night = 100.0
+Int = 75.0
+
+[_Shaders.AllInOne.Vibrance]
+Vibrance_Red_Day = 1.00
+Vibrance_Green_Day = 1.00
+Vibrance_Blue_Day = 1.00
+Vibrance_Red_Night = 1.00
+Vibrance_Green_Night = 1.00
+Vibrance_Blue_Night = 1.00
+Vibrance_Red_Interior = 1.00
+Vibrance_Green_Interior = 1.00
+Vibrance_Blue_Interior = 1.00
+Vibrance_Intensity_Day = 0.00
+Vibrance_Intensity_Night = 0.00
+Vibrance_Intensity_Interior = 0.00
+
 [_Shaders.AmbientOcclusion.Exteriors]
 AngleBias = 0.0                         # Value to increase the contribution of closer samples for more detail in creases.
 BlurDropThreshold = 8.0                 # Distance cutoff for areas that shouldn't be blurred together (edge aware denoise).

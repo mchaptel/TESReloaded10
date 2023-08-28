@@ -638,6 +638,7 @@ void ShaderManager::Initialize() {
 	TheShaderManager->FrameVertex = NULL;
 
 	// initializing the list of effect names
+	TheShaderManager->EffectsNames["AllInOne"] = &TheShaderManager->Effects.AllInOne;
 	TheShaderManager->EffectsNames["AvgLuma"] = &TheShaderManager->Effects.AvgLuma;
 	TheShaderManager->EffectsNames["AmbientOcclusion"] = &TheShaderManager->Effects.AmbientOcclusion;
 	TheShaderManager->EffectsNames["BloodLens"] = &TheShaderManager->Effects.BloodLens;
@@ -771,6 +772,12 @@ void ShaderManager::Initialize() {
 	TheShaderManager->ConstantsTable["TESR_ColoringEffectGamma"] = &TheShaderManager->ShaderConst.Coloring.EffectGamma;
 	TheShaderManager->ConstantsTable["TESR_ColoringData"] = &TheShaderManager->ShaderConst.Coloring.Data;
 	TheShaderManager->ConstantsTable["TESR_ColoringValues"] = &TheShaderManager->ShaderConst.Coloring.Values;
+	TheShaderManager->ConstantsTable["TESR_AllInOneDesat"] = &TheShaderManager->ShaderConst.AllInOne.Desaturation;
+	TheShaderManager->ConstantsTable["TESR_AllInOneGF"] = &TheShaderManager->ShaderConst.AllInOne.GammaFilter;
+	TheShaderManager->ConstantsTable["TESR_AllInOneCF"] = &TheShaderManager->ShaderConst.AllInOne.ColorFilter;
+	TheShaderManager->ConstantsTable["TESR_AllInOneCFAB"] = &TheShaderManager->ShaderConst.AllInOne.ColorFilterSecond_Adaptation_Brightness;
+	TheShaderManager->ConstantsTable["TESR_AllInOneTM"] = &TheShaderManager->ShaderConst.AllInOne.TM;
+	TheShaderManager->ConstantsTable["TESR_AllInOneVibrance"] = &TheShaderManager->ShaderConst.AllInOne.Vibrance;
 	TheShaderManager->ConstantsTable["TESR_DepthOfFieldBlur"] = &TheShaderManager->ShaderConst.DepthOfField.Blur;
 	TheShaderManager->ConstantsTable["TESR_DepthOfFieldData"] = &TheShaderManager->ShaderConst.DepthOfField.Data;
 	TheShaderManager->ConstantsTable["TESR_ExposureData"] = &TheShaderManager->ShaderConst.Exposure.Data;
@@ -1410,6 +1417,147 @@ void ShaderManager::UpdateConstants() {
 		ShaderConst.Rain.RainAspect.y = TheSettingManager->GetSettingF("Shaders.Precipitations.Main", "Coloring");
 		ShaderConst.Rain.RainAspect.z = TheSettingManager->GetSettingF("Shaders.Precipitations.Main", "Bloom");
 
+		if (Effects.AllInOne->Enabled) {
+
+			avglumaRequired = true;//Needed for adaptation
+
+			//Desat
+
+			ShaderConst.AllInOne.Desaturation.x = isExterior ? lerp(
+				TheSettingManager->GetSettingF("Shaders.AllInOne.Desaturation", "DesatRed_Night"),
+				TheSettingManager->GetSettingF("Shaders.AllInOne.Desaturation", "DesatRed_Day"),
+				isDayTime
+			) : TheSettingManager->GetSettingF("Shaders.AllInOne.Desaturation", "DesatRed_Interior");
+
+			ShaderConst.AllInOne.Desaturation.y = isExterior ? lerp(
+				TheSettingManager->GetSettingF("Shaders.AllInOne.Desaturation", "DesatGreen_Night"),
+				TheSettingManager->GetSettingF("Shaders.AllInOne.Desaturation", "DesatGreen_Day"),
+				isDayTime
+			) : TheSettingManager->GetSettingF("Shaders.AllInOne.Desaturation", "DesatGreen_Interior");
+
+			ShaderConst.AllInOne.Desaturation.z = isExterior ? lerp(
+				TheSettingManager->GetSettingF("Shaders.AllInOne.Desaturation", "DesatBlue_Night"),
+				TheSettingManager->GetSettingF("Shaders.AllInOne.Desaturation", "DesatBlue_Day"),
+				isDayTime
+			) : TheSettingManager->GetSettingF("Shaders.AllInOne.Desaturation", "DesatBlue_Interior");
+
+			//Gamma filter
+
+			ShaderConst.AllInOne.GammaFilter.x = isExterior ? lerp(
+				TheSettingManager->GetSettingF("Shaders.AllInOne.GammaFilter", "RedFilter_Night"),
+				TheSettingManager->GetSettingF("Shaders.AllInOne.GammaFilter", "RedFilter_Day"),
+				isDayTime
+			) : TheSettingManager->GetSettingF("Shaders.AllInOne.GammaFilter", "RedFilter_Interior");
+
+			ShaderConst.AllInOne.GammaFilter.y = isExterior ? lerp(
+				TheSettingManager->GetSettingF("Shaders.AllInOne.GammaFilter", "GreenFilter_Night"),
+				TheSettingManager->GetSettingF("Shaders.AllInOne.GammaFilter", "GreenFilter_Day"),
+				isDayTime
+			) : TheSettingManager->GetSettingF("Shaders.AllInOne.GammaFilter", "GreenFilter_Interior");
+
+			ShaderConst.AllInOne.GammaFilter.z = isExterior ? lerp(
+				TheSettingManager->GetSettingF("Shaders.AllInOne.GammaFilter", "BlueFilter_Night"),
+				TheSettingManager->GetSettingF("Shaders.AllInOne.GammaFilter", "BlueFilter_Day"),
+				isDayTime
+			) : TheSettingManager->GetSettingF("Shaders.AllInOne.GammaFilter", "BlueFilter_Interior");
+
+			ShaderConst.AllInOne.GammaFilter.w = isExterior ? lerp(
+				TheSettingManager->GetSettingF("Shaders.AllInOne.GammaFilter", "Gamma_Night"),
+				TheSettingManager->GetSettingF("Shaders.AllInOne.GammaFilter", "Gamma_Day"),
+				isDayTime
+			) : TheSettingManager->GetSettingF("Shaders.AllInOne.GammaFilter", "Gamma_Interior");
+
+			//Color filter
+
+			ShaderConst.AllInOne.ColorFilter.x = TheSettingManager->GetSettingI("Shaders.AllInOne.ColorFilter", "ColorFilter_UseColorSaturation");
+			ShaderConst.AllInOne.ColorFilter.y = TheSettingManager->GetSettingF("Shaders.AllInOne.ColorFilter", "ColorFilter_HueMid");
+			ShaderConst.AllInOne.ColorFilter.z = TheSettingManager->GetSettingF("Shaders.AllInOne.ColorFilter", "ColorFilter_HueRange");
+			ShaderConst.AllInOne.ColorFilter.w = TheSettingManager->GetSettingF("Shaders.AllInOne.ColorFilter", "ColorFilter_SaturationLimit");
+			ShaderConst.AllInOne.ColorFilterSecond_Adaptation_Brightness.x = TheSettingManager->GetSettingF("Shaders.AllInOne.ColorFilter", "ColorFilter_Strength");
+
+			//Adaptation
+
+			ShaderConst.AllInOne.ColorFilterSecond_Adaptation_Brightness.y = isExterior ? lerp(
+				TheSettingManager->GetSettingF("Shaders.AllInOne.Adaptation", "Adaptation_Min_Night"),
+				TheSettingManager->GetSettingF("Shaders.AllInOne.Adaptation", "Adaptation_Min_Day"),
+				isDayTime
+			) : TheSettingManager->GetSettingF("Shaders.AllInOne.Adaptation", "Adaptation_Min_Interior");
+
+			ShaderConst.AllInOne.ColorFilterSecond_Adaptation_Brightness.z = isExterior ? lerp(
+				TheSettingManager->GetSettingF("Shaders.AllInOne.Adaptation", "Adaptation_Max_Night"),
+				TheSettingManager->GetSettingF("Shaders.AllInOne.Adaptation", "Adaptation_Max_Day"),
+				isDayTime
+			) : TheSettingManager->GetSettingF("Shaders.AllInOne.Adaptation", "Adaptation_Max_Interior");
+
+			ShaderConst.AllInOne.ColorFilterSecond_Adaptation_Brightness.w = isExterior ? lerp(
+				TheSettingManager->GetSettingF("Shaders.AllInOne.Brightness", "Night"),
+				TheSettingManager->GetSettingF("Shaders.AllInOne.Brightness", "Day"),
+				isDayTime
+			) : TheSettingManager->GetSettingF("Shaders.AllInOne.Brightness", "Int");
+			/*
+			Logger::Log("Brightness values! Day is: ");
+			Logger::Log(std::to_string(TheSettingManager->GetSettingF("Shaders.AllInOne.Brightness", "Day")).c_str());
+			Logger::Log("Brightness values! Night is: ");
+			Logger::Log(std::to_string(TheSettingManager->GetSettingF("Shaders.AllInOne.Brightness", "Night")).c_str());
+			Logger::Log("Brightness values! Interior is: ");
+			Logger::Log(std::to_string(TheSettingManager->GetSettingF("Shaders.AllInOne.Brightness", "Int")).c_str());
+			Logger::Log("Brightness values! Final is: ");
+			Logger::Log(std::to_string(ShaderConst.AllInOne.ColorFilterSecond_Adaptation_Brightness.w).c_str());
+			*/
+			//
+
+			ShaderConst.AllInOne.TM.x = isExterior ? lerp(
+				TheSettingManager->GetSettingF("Shaders.AllInOne.TMIntensityContrast", "Night"),
+				TheSettingManager->GetSettingF("Shaders.AllInOne.TMIntensityContrast", "Day"),
+				isDayTime
+			) : TheSettingManager->GetSettingF("Shaders.AllInOne.TMIntensityContrast", "Int");
+
+			ShaderConst.AllInOne.TM.y = isExterior ? lerp(
+				TheSettingManager->GetSettingF("Shaders.AllInOne.Saturation", "Night"),
+				TheSettingManager->GetSettingF("Shaders.AllInOne.Saturation", "Day"),
+				isDayTime
+			) : TheSettingManager->GetSettingF("Shaders.AllInOne.Saturation", "Int");
+
+			ShaderConst.AllInOne.TM.z = isExterior ? lerp(
+				TheSettingManager->GetSettingF("Shaders.AllInOne.TMCurve", "Night"),
+				TheSettingManager->GetSettingF("Shaders.AllInOne.TMCurve", "Day"),
+				isDayTime
+			) : TheSettingManager->GetSettingF("Shaders.AllInOne.TMCurve", "Int");
+
+			ShaderConst.AllInOne.TM.w = isExterior ? lerp(
+				TheSettingManager->GetSettingF("Shaders.AllInOne.Oversaturation", "Night"),
+				TheSettingManager->GetSettingF("Shaders.AllInOne.Oversaturation", "Day"),
+				isDayTime
+			) : TheSettingManager->GetSettingF("Shaders.AllInOne.Oversaturation", "Int");
+
+			//
+
+			ShaderConst.AllInOne.Vibrance.x = isExterior ? lerp(
+				TheSettingManager->GetSettingF("Shaders.AllInOne.Vibrance", "Vibrance_Red_Night"),
+				TheSettingManager->GetSettingF("Shaders.AllInOne.Vibrance", "Vibrance_Red_Day"),
+				isDayTime
+			) : TheSettingManager->GetSettingF("Shaders.AllInOne.Vibrance", "Vibrance_Red_Interior");
+
+			ShaderConst.AllInOne.Vibrance.y = isExterior ? lerp(
+				TheSettingManager->GetSettingF("Shaders.AllInOne.Vibrance", "Vibrance_Green_Night"),
+				TheSettingManager->GetSettingF("Shaders.AllInOne.Vibrance", "Vibrance_Green_Day"),
+				isDayTime
+			) : TheSettingManager->GetSettingF("Shaders.AllInOne.Vibrance", "Vibrance_Green_Interior");
+
+			ShaderConst.AllInOne.Vibrance.z = isExterior ? lerp(
+				TheSettingManager->GetSettingF("Shaders.AllInOne.Vibrance", "Vibrance_Blue_Night"),
+				TheSettingManager->GetSettingF("Shaders.AllInOne.Vibrance", "Vibrance_Blue_Day"),
+				isDayTime
+			) : TheSettingManager->GetSettingF("Shaders.AllInOne.Vibrance", "Vibrance_Blue_Interior");
+
+			ShaderConst.AllInOne.Vibrance.w = isExterior ? lerp(
+				TheSettingManager->GetSettingF("Shaders.AllInOne.Vibrance", "Vibrance_Intensity_Night"),
+				TheSettingManager->GetSettingF("Shaders.AllInOne.Vibrance", "Vibrance_Intensity_Day"),
+				isDayTime
+			) : TheSettingManager->GetSettingF("Shaders.AllInOne.Vibrance", "Vibrance_Intensity_Interior");
+
+		}
+
 		ShaderConst.Cinema.Data.y = TheSettingManager->GetSettingF("Shaders.Cinema.Main", "VignetteRadius");
 		ShaderConst.Cinema.Data.z = TheSettingManager->GetSettingF("Shaders.Cinema.Main", "VignetteDarkness");
 		ShaderConst.Cinema.Data.w = TheSettingManager->GetSettingF("Shaders.Cinema.Main", "OverlayStrength");
@@ -1993,6 +2141,7 @@ void ShaderManager::RenderEffects(IDirect3DSurface9* RenderTarget) {
 	// screenspace coloring/blurring effects get rendered last
 	Effects.Coloring->Render(Device, RenderTarget, RenderedSurface, false, false);
 	Effects.Bloom->Render(Device, RenderTarget, RenderedSurface, false, true);
+	Effects.AllInOne->Render(Device, RenderTarget, RenderedSurface, false, true);
 	Effects.Exposure->Render(Device, RenderTarget, RenderedSurface, false, true);
 	if (ShaderConst.DepthOfField.Enabled) Effects.DepthOfField->Render(Device, RenderTarget, RenderedSurface, false, true);
 	if (ShaderConst.MotionBlur.Data.x || ShaderConst.MotionBlur.Data.y) Effects.MotionBlur->Render(Device, RenderTarget, RenderedSurface, false, true);

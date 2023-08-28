@@ -108,6 +108,18 @@ struct ShaderConstants {
 		D3DXVECTOR4		Data;
 		D3DXVECTOR4		Values;
 	};
+
+	struct AllInOneStruct {
+
+		D3DXVECTOR4		Desaturation; //.r = DesatRed, .g = DesatGreen, .b = DesatBlue
+		D3DXVECTOR4		GammaFilter; //.x = RedFilter, .y = GreenFilter, .z = BlueFilter, .w = Gamma
+		D3DXVECTOR4		ColorFilter; //.x = ColorFilter_UseColorSaturation, .y = ColorFilter_HueMid, .z = ColorFilter_HueRange, .w = ColorFilter_SaturationLimit
+		D3DXVECTOR4		ColorFilterSecond_Adaptation_Brightness; //.x = ColorFilter_Strength, .y = Adaptation_Min, .z = Adaptation_Max, .w = Brightness
+		D3DXVECTOR4		TM; //.x = TM_IntensityContrast, .y = TM_Saturation, .z = TM_ToneMappingCurve, .w = TM_Oversaturation
+		D3DXVECTOR4		Vibrance; //.x = Vibrance_Red, .y = Vibrance_Green, .z = Vibrance_Blue, .w = Vibrance_Intensity
+
+	};
+
 	struct CinemaStruct {
 		D3DXVECTOR4		Data;
 		D3DXVECTOR4		Settings;
@@ -213,6 +225,7 @@ struct ShaderConstants {
 	DepthOfFieldStruct		DepthOfField;
 	AmbientOcclusionStruct	AmbientOcclusion;
 	ColoringStruct			Coloring;
+	AllInOneStruct			AllInOne;
 	CinemaStruct			Cinema;
 	LensStruct				Lens;
 	BloomStruct				Bloom;
@@ -366,6 +379,7 @@ public:
 	static float			clamp(float a, float b, float t);
 		
 	struct	EffectsStruct {
+		EffectRecord*		AllInOne;
 		EffectRecord*		AvgLuma;
 		EffectRecord*		AmbientOcclusion;
 		EffectRecord*		BloodLens;
