@@ -120,7 +120,7 @@ Enabled = false
 [_Shaders.AllInOne.Desaturation]
 DesatRed_Day = 1.0
 DesatRed_Night = 1.0
-DesatRed_Interior = 1.0
+DesatRed_Int = 1.0
 DesatGreen_Day = 0.1
 DesatGreen_Night = 0.1
 DesatGreen_Int = 0.15
@@ -154,8 +154,8 @@ Adaptation_Min_Day = 0.25
 Adaptation_Max_Day = 0.25
 Adaptation_Min_Night = 0.15
 Adaptation_Max_Night = 0.15
-Adaptation_Min_Interior = 0.15
-Adaptation_Max_Interior = 0.15
+Adaptation_Min_Int = 0.15
+Adaptation_Max_Int = 0.15
 
 [_Shaders.AllInOne.Brightness]
 Day = 1.00
@@ -189,12 +189,12 @@ Vibrance_Blue_Day = 1.00
 Vibrance_Red_Night = 1.00
 Vibrance_Green_Night = 1.00
 Vibrance_Blue_Night = 1.00
-Vibrance_Red_Interior = 1.00
-Vibrance_Green_Interior = 1.00
-Vibrance_Blue_Interior = 1.00
+Vibrance_Red_Int = 1.00
+Vibrance_Green_Int = 1.00
+Vibrance_Blue_Int = 1.00
 Vibrance_Intensity_Day = 0.00
 Vibrance_Intensity_Night = 0.00
-Vibrance_Intensity_Interior = 0.00
+Vibrance_Intensity_Int = 0.00
 
 [_Shaders.AmbientOcclusion.Exteriors]
 AngleBias = 0.0                         # Value to increase the contribution of closer samples for more detail in creases.

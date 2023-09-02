@@ -1427,19 +1427,19 @@ void ShaderManager::UpdateConstants() {
 				TheSettingManager->GetSettingF("Shaders.AllInOne.Desaturation", "DesatRed_Night"),
 				TheSettingManager->GetSettingF("Shaders.AllInOne.Desaturation", "DesatRed_Day"),
 				isDayTime
-			) : TheSettingManager->GetSettingF("Shaders.AllInOne.Desaturation", "DesatRed_Interior");
+			) : TheSettingManager->GetSettingF("Shaders.AllInOne.Desaturation", "DesatRed_Int");
 
 			ShaderConst.AllInOne.Desaturation.y = isExterior ? lerp(
 				TheSettingManager->GetSettingF("Shaders.AllInOne.Desaturation", "DesatGreen_Night"),
 				TheSettingManager->GetSettingF("Shaders.AllInOne.Desaturation", "DesatGreen_Day"),
 				isDayTime
-			) : TheSettingManager->GetSettingF("Shaders.AllInOne.Desaturation", "DesatGreen_Interior");
+			) : TheSettingManager->GetSettingF("Shaders.AllInOne.Desaturation", "DesatGreen_Int");
 
 			ShaderConst.AllInOne.Desaturation.z = isExterior ? lerp(
 				TheSettingManager->GetSettingF("Shaders.AllInOne.Desaturation", "DesatBlue_Night"),
 				TheSettingManager->GetSettingF("Shaders.AllInOne.Desaturation", "DesatBlue_Day"),
 				isDayTime
-			) : TheSettingManager->GetSettingF("Shaders.AllInOne.Desaturation", "DesatBlue_Interior");
+			) : TheSettingManager->GetSettingF("Shaders.AllInOne.Desaturation", "DesatBlue_Int");
 
 			//Gamma filter
 
@@ -1447,25 +1447,25 @@ void ShaderManager::UpdateConstants() {
 				TheSettingManager->GetSettingF("Shaders.AllInOne.GammaFilter", "RedFilter_Night"),
 				TheSettingManager->GetSettingF("Shaders.AllInOne.GammaFilter", "RedFilter_Day"),
 				isDayTime
-			) : TheSettingManager->GetSettingF("Shaders.AllInOne.GammaFilter", "RedFilter_Interior");
+			) : TheSettingManager->GetSettingF("Shaders.AllInOne.GammaFilter", "RedFilter_Int");
 
 			ShaderConst.AllInOne.GammaFilter.y = isExterior ? lerp(
 				TheSettingManager->GetSettingF("Shaders.AllInOne.GammaFilter", "GreenFilter_Night"),
 				TheSettingManager->GetSettingF("Shaders.AllInOne.GammaFilter", "GreenFilter_Day"),
 				isDayTime
-			) : TheSettingManager->GetSettingF("Shaders.AllInOne.GammaFilter", "GreenFilter_Interior");
+			) : TheSettingManager->GetSettingF("Shaders.AllInOne.GammaFilter", "GreenFilter_Int");
 
 			ShaderConst.AllInOne.GammaFilter.z = isExterior ? lerp(
 				TheSettingManager->GetSettingF("Shaders.AllInOne.GammaFilter", "BlueFilter_Night"),
 				TheSettingManager->GetSettingF("Shaders.AllInOne.GammaFilter", "BlueFilter_Day"),
 				isDayTime
-			) : TheSettingManager->GetSettingF("Shaders.AllInOne.GammaFilter", "BlueFilter_Interior");
+			) : TheSettingManager->GetSettingF("Shaders.AllInOne.GammaFilter", "BlueFilter_Int");
 
 			ShaderConst.AllInOne.GammaFilter.w = isExterior ? lerp(
 				TheSettingManager->GetSettingF("Shaders.AllInOne.GammaFilter", "Gamma_Night"),
 				TheSettingManager->GetSettingF("Shaders.AllInOne.GammaFilter", "Gamma_Day"),
 				isDayTime
-			) : TheSettingManager->GetSettingF("Shaders.AllInOne.GammaFilter", "Gamma_Interior");
+			) : TheSettingManager->GetSettingF("Shaders.AllInOne.GammaFilter", "Gamma_Int");
 
 			//Color filter
 
@@ -1481,13 +1481,13 @@ void ShaderManager::UpdateConstants() {
 				TheSettingManager->GetSettingF("Shaders.AllInOne.Adaptation", "Adaptation_Min_Night"),
 				TheSettingManager->GetSettingF("Shaders.AllInOne.Adaptation", "Adaptation_Min_Day"),
 				isDayTime
-			) : TheSettingManager->GetSettingF("Shaders.AllInOne.Adaptation", "Adaptation_Min_Interior");
+			) : TheSettingManager->GetSettingF("Shaders.AllInOne.Adaptation", "Adaptation_Min_Int");
 
 			ShaderConst.AllInOne.ColorFilterSecond_Adaptation_Brightness.z = isExterior ? lerp(
 				TheSettingManager->GetSettingF("Shaders.AllInOne.Adaptation", "Adaptation_Max_Night"),
 				TheSettingManager->GetSettingF("Shaders.AllInOne.Adaptation", "Adaptation_Max_Day"),
 				isDayTime
-			) : TheSettingManager->GetSettingF("Shaders.AllInOne.Adaptation", "Adaptation_Max_Interior");
+			) : TheSettingManager->GetSettingF("Shaders.AllInOne.Adaptation", "Adaptation_Max_Int");
 
 			ShaderConst.AllInOne.ColorFilterSecond_Adaptation_Brightness.w = isExterior ? lerp(
 				TheSettingManager->GetSettingF("Shaders.AllInOne.Brightness", "Night"),
@@ -1536,25 +1536,25 @@ void ShaderManager::UpdateConstants() {
 				TheSettingManager->GetSettingF("Shaders.AllInOne.Vibrance", "Vibrance_Red_Night"),
 				TheSettingManager->GetSettingF("Shaders.AllInOne.Vibrance", "Vibrance_Red_Day"),
 				isDayTime
-			) : TheSettingManager->GetSettingF("Shaders.AllInOne.Vibrance", "Vibrance_Red_Interior");
+			) : TheSettingManager->GetSettingF("Shaders.AllInOne.Vibrance", "Vibrance_Red_Int");
 
 			ShaderConst.AllInOne.Vibrance.y = isExterior ? lerp(
 				TheSettingManager->GetSettingF("Shaders.AllInOne.Vibrance", "Vibrance_Green_Night"),
 				TheSettingManager->GetSettingF("Shaders.AllInOne.Vibrance", "Vibrance_Green_Day"),
 				isDayTime
-			) : TheSettingManager->GetSettingF("Shaders.AllInOne.Vibrance", "Vibrance_Green_Interior");
+			) : TheSettingManager->GetSettingF("Shaders.AllInOne.Vibrance", "Vibrance_Green_Int");
 
 			ShaderConst.AllInOne.Vibrance.z = isExterior ? lerp(
 				TheSettingManager->GetSettingF("Shaders.AllInOne.Vibrance", "Vibrance_Blue_Night"),
 				TheSettingManager->GetSettingF("Shaders.AllInOne.Vibrance", "Vibrance_Blue_Day"),
 				isDayTime
-			) : TheSettingManager->GetSettingF("Shaders.AllInOne.Vibrance", "Vibrance_Blue_Interior");
+			) : TheSettingManager->GetSettingF("Shaders.AllInOne.Vibrance", "Vibrance_Blue_Int");
 
 			ShaderConst.AllInOne.Vibrance.w = isExterior ? lerp(
 				TheSettingManager->GetSettingF("Shaders.AllInOne.Vibrance", "Vibrance_Intensity_Night"),
 				TheSettingManager->GetSettingF("Shaders.AllInOne.Vibrance", "Vibrance_Intensity_Day"),
 				isDayTime
-			) : TheSettingManager->GetSettingF("Shaders.AllInOne.Vibrance", "Vibrance_Intensity_Interior");
+			) : TheSettingManager->GetSettingF("Shaders.AllInOne.Vibrance", "Vibrance_Intensity_Int");
 
 		}
 
