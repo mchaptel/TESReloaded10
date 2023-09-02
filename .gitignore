@@ -6,4 +6,4 @@ packages
 *.fx
 /build/*
 Configurator/target
-TESReloaded/lib
+TESReloaded/lib/*
