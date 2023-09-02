@@ -1,3 +1,4 @@
+/*
 float3 RGBtoHSV(float3 c)
 {
 	float4 K = float4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
@@ -8,14 +9,18 @@ float3 RGBtoHSV(float3 c)
 	float e = 1.0e-10;
 	return float3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
 }
+*/
 
+/*
 float3 HSVtoRGB(float3 c)
 {
 	float4 K = float4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
 	float3 p = abs(frac(c.xxx + K.xyz) * 6.0 - K.www);
 	return c.z * lerp(K.xxx, saturate(p - K.xxx), c.y);
 }
+*/
 
+/*
 float randomNoise(in float3 uvw)
 {
 	float3 noise = (frac(sin(dot(uvw ,float3(12.9898,78.233, 42.2442)*2.0)) * 43758.5453));
@@ -26,7 +31,7 @@ float linStep(float minVal, float maxVal, float t)
 {
 	return saturate((t - minVal) / (maxVal - minVal));
 }
-
+*/
 
 /////////////////////
 ////Begin prod80 code

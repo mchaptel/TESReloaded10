@@ -1,3 +1,5 @@
+//NOT FINISHED
+/*
 texture2D textureLutInterior
 <
 	string ResourceName="enblut_interior.bmp";
@@ -52,13 +54,15 @@ sampler2D samplerLutNight
 	MipMapLodBias=0;
 };
 
+*/
+
 /*
 LOAD_TEXTURE( LUT_ExtNight, enblut_interior.png, LINEAR, CLAMP ); // exterior night
 LOAD_TEXTURE( LUT_ExtNight, enblut_day.png, LINEAR, CLAMP ); // exterior night
 LOAD_TEXTURE( LUT_ExtNight, enblut_night.png, LINEAR, CLAMP ); // exterior night
 */
 
-
+/*
 void	ApplyLUT(inout float3 color, float ENightDayFactor, float EInteriorFactor)
 {
 	float3 ColorLutDay;  // CLuT for Days
@@ -98,3 +102,4 @@ void	ApplyLUT(inout float3 color, float ENightDayFactor, float EInteriorFactor)
 
 	color.rgb = lerp(ColorLutBlend.rgb, ColorLutBlendRow.rgb, color.b - CLut_UV.w);
 }
+*/
