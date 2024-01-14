@@ -690,7 +690,7 @@ void ShadowManager::RenderShadowCubeMap(ShadowSceneLight** Lights, UInt32 LightI
 			NiShadeProperty* pShaderProp = static_cast<NiShadeProperty*>(geo->GetProperty(NiProperty::kType_Shade));
 			NiMaterialProperty* pMatProp = static_cast<NiMaterialProperty*>(geo->GetProperty(NiProperty::kType_Material));
 
-			if (pMatProp->fAlpha < 0.05)
+			if (pMatProp->fAlpha < 0.05 || pShaderProp->flags & 2)
 				continue;
 
 			// check data for rigged geometry
@@ -730,6 +730,38 @@ void ShadowManager::RenderShadowCubeMap(ShadowSceneLight** Lights, UInt32 LightI
 	timer.LogTime("RenderShadowCubeMap");	
 }
 
+static void FlagViewmodelGeometryRecurse(NiNode* apNode) {
+	UInt32 uiSize = apNode->m_children.numObjs;
+	for (UInt32 i = 0; i < uiSize; i++) {
+		NiAVObject* pObject = apNode->m_children.data[i];
+
+		if (!pObject)
+			continue;
+
+		if (pObject->IsGeometry()) {
+			NiGeometry* pGeometry = (NiGeometry*)pObject;
+			NiShadeProperty* pShaderProp = (NiShadeProperty*)pGeometry->GetProperty(NiProperty::kType_Shade);
+			if (pShaderProp)
+				pShaderProp->flags |= 2;
+		}
+		else if (pObject->IsNiNode()) {
+			FlagViewmodelGeometryRecurse((NiNode*)pObject);
+		}
+
+	}
+}
+
+static UInt32 uiFlagCheckTime = 0;
+static void FlagViewmodelGeometry() {
+	if (uiFlagCheckTime == 0 || uiFlagCheckTime > 50) {
+		NiNode* pRoot = Player->firstPersonNiNode;
+		if (pRoot)
+			FlagViewmodelGeometryRecurse(pRoot);
+
+		uiFlagCheckTime = 1;
+	}
+	uiFlagCheckTime++;
+}
 
 
 //static 	NiDX9RenderState::NiRenderStateSetting* RenderStateSettings = nullptr;
@@ -782,6 +814,9 @@ void ShadowManager::RenderShadowMaps() {
 
 	ShadowData->w = ShadowsExteriors->ShadowMode;	// Mode (0:off, 1:VSM, 2:ESM, 3: ESSM);
 	NiNode* PlayerNode = Player->GetNode();
+
+	FlagViewmodelGeometry();
+	
 	D3DXVECTOR3 At;
 
 	At.x = PlayerNode->m_worldTransform.pos.x - TheRenderManager->CameraPosition.x;
