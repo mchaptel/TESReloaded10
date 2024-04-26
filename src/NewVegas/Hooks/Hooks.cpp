@@ -57,7 +57,7 @@ void AttachHooks() {
 	SafeWriteJump(Jumpers::RenderInterface::Hook, (UInt32)RenderInterfaceHook);
 	SafeWriteJump(Jumpers::SetRegionEditorName::Hook, (UInt32)SetRegionEditorNameHook);
 	SafeWriteJump(Jumpers::SetWeatherEditorName::Hook, (UInt32)SetWeatherEditorNameHook);
-	if (!SettingsMain->Main.DisableShadowManagement) {
+	if (!(SettingsMain->Main.DisableShadowManagement) ) {
 		SafeWriteJump(Jumpers::Shadows::RenderShadowMapHook, (UInt32)RenderShadowMapHook);
 		//	SafeWriteJump(Jumpers::Shadows::RenderShadowMap1Hook,		(UInt32)RenderShadowMap1Hook);
 		SafeWriteJump(Jumpers::Shadows::AddCastShadowFlagHook, (UInt32)AddCastShadowFlagHook);
