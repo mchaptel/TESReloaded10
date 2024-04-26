@@ -370,6 +370,7 @@ void SettingManager::LoadSettings() {
 	SettingsMain.Main.ForceReflections = GetSettingI("Main.Main.Water", "ForceReflections");
 	SettingsMain.Main.MemoryHeapManagement = GetSettingI("Main.Main.Memory", "HeapManagement");
 	SettingsMain.Main.MemoryTextureManagement = GetSettingI("Main.Main.Memory", "TextureManagement");
+	SettingsMain.Main.DisableShadowManagement = GetSettingI("Main.Main.Misc", "DisableShadowManagement");
 	SettingsMain.Main.AnisotropicFilter = GetSettingI("Main.Main.Misc", "AnisotropicFilter");
 	SettingsMain.Main.FarPlaneDistance = GetSettingF("Main.Main.Misc", "FarPlaneDistance");
 	SettingsMain.Main.ScreenshotKey = GetSettingI("Main.Main.Misc", "ScreenshotKey");

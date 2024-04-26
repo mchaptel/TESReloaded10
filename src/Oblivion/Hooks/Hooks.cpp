@@ -134,8 +134,10 @@ void AttachHooks() {
 	SafeWriteJump(Jumpers::HitEvent::Hook,						(UInt32)HitEventHook);
 	SafeWriteJump(Jumpers::NewAnimSequenceSingle::Hook,			(UInt32)NewAnimSequenceSingleHook);
 	SafeWriteJump(Jumpers::RemoveSequence::Hook,				(UInt32)RemoveSequenceHook);
-	SafeWriteJump(Jumpers::Shadows::RenderShadowMapHook,		(UInt32)RenderShadowMapHook);
-	SafeWriteJump(Jumpers::Shadows::AddCastShadowFlagHook,		(UInt32)AddCastShadowFlagHook);
+	if (!SettingsMain->Main.DisableShadowManagement) {
+		SafeWriteJump(Jumpers::Shadows::RenderShadowMapHook, (UInt32)RenderShadowMapHook);
+		SafeWriteJump(Jumpers::Shadows::AddCastShadowFlagHook, (UInt32)AddCastShadowFlagHook);
+	}
 //	SafeWriteJump(Jumpers::WaterHeightMap::Hook,				(UInt32)WaterHeightMapHook);
 	SafeWriteJump(Jumpers::EndProcess::Hook,					(UInt32)EndProcessHook);
     
