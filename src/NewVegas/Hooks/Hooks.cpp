@@ -57,10 +57,13 @@ void AttachHooks() {
 	SafeWriteJump(Jumpers::RenderInterface::Hook, (UInt32)RenderInterfaceHook);
 	SafeWriteJump(Jumpers::SetRegionEditorName::Hook, (UInt32)SetRegionEditorNameHook);
 	SafeWriteJump(Jumpers::SetWeatherEditorName::Hook, (UInt32)SetWeatherEditorNameHook);
-	SafeWriteJump(Jumpers::Shadows::RenderShadowMapHook, (UInt32)RenderShadowMapHook);
-	//	SafeWriteJump(Jumpers::Shadows::RenderShadowMap1Hook,		(UInt32)RenderShadowMap1Hook);
-	SafeWriteJump(Jumpers::Shadows::AddCastShadowFlagHook, (UInt32)AddCastShadowFlagHook);
-	SafeWriteJump(Jumpers::Shadows::LeavesNodeNameHook, (UInt32)LeavesNodeNameHook);
+	if (!(SettingsMain->Main.DisableShadowManagement) ) {
+		SafeWriteJump(Jumpers::Shadows::RenderShadowMapHook, (UInt32)RenderShadowMapHook);
+		//	SafeWriteJump(Jumpers::Shadows::RenderShadowMap1Hook,		(UInt32)RenderShadowMap1Hook);
+		SafeWriteJump(Jumpers::Shadows::AddCastShadowFlagHook, (UInt32)AddCastShadowFlagHook);
+		SafeWriteJump(Jumpers::Shadows::LeavesNodeNameHook, (UInt32)LeavesNodeNameHook);
+	}
+
 	SafeWriteCall(Jumpers::MainMenuMusic::Fix1, (UInt32)MainMenuMusicFix);
 	SafeWriteCall(Jumpers::MainMenuMusic::Fix2, (UInt32)MainMenuMusicFix);
 

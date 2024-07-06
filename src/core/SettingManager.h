@@ -13,6 +13,7 @@ struct SettingsMainStruct {
 		bool	RemovePrecipitations;
 		bool	MemoryHeapManagement;
 		bool	MemoryTextureManagement;
+		bool	DisableShadowManagement;
 		bool	ReplaceIntro;
         bool    SkipFog;
         bool    RenderEffects;
